@@ -45,7 +45,9 @@ Tap or press J / Enter to reveal the next panel; Esc (or the pause button) skips
 
 ## Play
 
-Open `dist/index.html` in a browser. No server or install needed.
+Online: **https://monirulhaque.github.io/popeye_the_sailor_man_in_bent_harbour/** (GitHub Pages; works on phones too).
+
+Offline: open `index.html` (or `dist/index.html`) in a browser. No server or install needed.
 
 | | Keyboard | Gamepad |
 |---|---|---|
@@ -60,7 +62,8 @@ Held upright, the game sits at the top with the controls below; turn the phone s
 
 ## Build
 
-    node build.js        # src/*.js + src/page.html  ->  dist/index.html (single self-contained file)
+    node build.js        # src/*.js + src/page.html  ->  dist/index.html (single self-contained file),
+                         # also copied to index.html and docs/index.html for GitHub Pages
 
 No dependencies. `desktop/main.js` is a minimal Electron shell for a desktop build
 (`npm i -D electron && npm run desktop`); it has not been run in this repo yet.
