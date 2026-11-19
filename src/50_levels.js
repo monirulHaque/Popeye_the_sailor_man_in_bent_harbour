@@ -342,9 +342,10 @@ class Boss {
     ink(rrect(x - 46, y + 20, 92, 16, 3), C.ink, 0); label('BRAGG HAULAGE', x, y + 29, 10, C.cream, FONT.sign, 'center');
     ink(rrect(x - 34, y - 26, 68, 40, 4), C.tealLt, 3);
     X.save(); X.clip(rrect(x - 34, y - 26, 68, 40, 4));
-    // the man himself: beard, cap, cigar
-    ink(circ(x, y - 4, 15), '#e2a47a', 2.6); ink(ell(x, y + 10, 19, 13), '#3b3a3a', 2.6);
-    ink(poly([[x - 17, y - 14], [x + 17, y - 14], [x + 14, y - 26], [x - 14, y - 26]]), C.navy, 2.6); line([[x - 20, y - 13], [x + 22, y - 13]], 4);
+    // the man himself: top hat, walrus moustache, cigar
+    ink(ell(x, y, 15, 15), '#eab08a', 2.6); ink(ell(x + 1, y + 1, 4.6, 4), C.red, 2);
+    const mo = new Path2D(); mo.moveTo(x - 13, y + 6); mo.quadraticCurveTo(x, y + 1, x + 13, y + 6); mo.quadraticCurveTo(x + 10, y + 15, x, y + 10); mo.quadraticCurveTo(x - 10, y + 15, x - 13, y + 6); mo.closePath(); ink(mo, '#d6d2c4', 2);
+    ink(rrect(x - 11, y - 32, 22, 20, 1.5), C.ink, 2); X.fillStyle = C.red; X.fillRect(x - 10, y - 16, 20, 3); line([[x - 18, y - 12], [x + 18, y - 12]], 3.6);
     X.fillStyle = C.ink; if (wrecked || this.flash > 0) { eyeX(x - 6, y - 6, 2.6); eyeX(x + 6, y - 6, 2.6); } else { X.beginPath(); X.arc(x - 6, y - 6, 2, 0, TAU); X.arc(x + 6, y - 6, 2, 0, TAU); X.fill(); line([[x - 11, y - 11], [x - 2, y - 8]], 2.6); line([[x + 11, y - 11], [x + 2, y - 8]], 2.6); }
     line([[x + 4, y + 4], [x + 20, y + 1]], 4.6); line([[x + 4, y + 4], [x + 20, y + 1]], 2, C.woodDk);
     X.restore();

@@ -7,5 +7,5 @@ const js = fs.readdirSync(src).filter((f) => f.endsWith('.js')).sort().map((f) =
 const page = fs.readFileSync(path.join(src, 'page.html'), 'utf8').replace('/*SCRIPT*/', () => `(function () {\n'use strict';\n${js}\n})();`);
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'artifact.html'), page);
-fs.writeFileSync(path.join(out, 'index.html'), `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n</head>\n<body>\n${page}\n</body>\n</html>\n`);
+fs.writeFileSync(path.join(out, 'index.html'), `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<title>Bent Harbor</title>\n</head>\n<body>\n${page}\n</body>\n</html>\n`);
 console.log('built', (page.length / 1024).toFixed(1) + ' KB');

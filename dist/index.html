@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Bent Harbor</title>
 </head>
 <body>
 <title>Bent Harbor</title>
@@ -15,7 +18,7 @@
   html, body { height: 100%; }
   body { margin: 0; background: radial-gradient(120% 90% at 50% 40%, var(--table-2), var(--table)); color: var(--paper); box-sizing: border-box; overflow: hidden;
     display: flex; flex-direction: column; gap: 8px; padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
-    font-family: var(--font-type); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    font-family: var(--font-type); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
   #stage { flex: 1; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; }
   #game { display: block; background: var(--paper); border-radius: 2px; box-shadow: 0 2px 0 #000, 0 14px 44px rgba(0, 0, 0, .65); touch-action: none; max-width: 100%; }
   #keys { margin: 0; text-align: center; font-size: 12.5px; letter-spacing: .04em; color: var(--muted); }
@@ -29,16 +32,38 @@
   .tc-btn:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
   #tc-punch { right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(70px + env(safe-area-inset-bottom, 0px)); background: #c9442c; color: var(--paper); }
   #tc-jump { right: calc(max(18px, env(safe-area-inset-right, 0px)) + 96px); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); background: var(--accent); }
-  #tc-pause { right: max(18px, env(safe-area-inset-right, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); width: 52px; height: 40px; border-radius: 6px; background: var(--paper); font-size: 17px; box-shadow: 0 3px 0 #000; }
+  #tc-pause, #tc-full { top: calc(10px + env(safe-area-inset-top, 0px)); width: 52px; height: 40px; border-radius: 6px; background: var(--paper); font-size: 17px; box-shadow: 0 3px 0 #000; }
+  #tc-pause { right: max(18px, env(safe-area-inset-right, 0px)); }
+  #tc-full { left: max(18px, env(safe-area-inset-left, 0px)); font-size: 15px; }
+  #rotate { display: none; margin: 0; text-align: center; font: 18px var(--font-cap); letter-spacing: .06em; color: var(--muted); }
+  /* phones held upright: game at the top, thumbs below it */
+  @media (pointer: coarse) and (orientation: portrait) {
+    #stage { flex: 0 0 auto; align-items: flex-start; padding-top: 54px; }
+    #rotate { display: block; }
+    #tc-stick { width: 140px; height: 140px; }
+    #tc-nub { left: 42px; top: 42px; width: 56px; height: 56px; }
+    .tc-btn { width: 92px; height: 92px; }
+  }
+  /* phones held sideways: as much game as the screen allows */
+  @media (pointer: coarse) and (orientation: landscape) and (max-height: 520px) {
+    body { padding-block: 4px; gap: 0; }
+    #tc-stick { width: 112px; height: 112px; opacity: .85; }
+    #tc-nub { left: 31px; top: 31px; width: 50px; height: 50px; }
+    .tc-btn { width: 74px; height: 74px; font-size: 21px; opacity: .9; }
+    #tc-punch { bottom: calc(58px + env(safe-area-inset-bottom, 0px)); }
+    #tc-jump { right: calc(max(18px, env(safe-area-inset-right, 0px)) + 82px); }
+  }
   @media (pointer: coarse) { #keys { display: none; } }
 </style>
 <div id="stage"><canvas id="game" width="1280" height="720" aria-label="Bent Harbor, a dockside beat-'em-up. Keyboard: A and D move, Space jumps, J punches."></canvas></div>
+<p id="rotate">Turn your phone sideways for a bigger view</p>
 <p id="keys"><b>A D</b> move &nbsp;·&nbsp; <b>SPACE</b> jump &nbsp;·&nbsp; <b>J</b> punch (hold to wind up, <b>↑ ↓</b> to aim) &nbsp;·&nbsp; <b>ESC</b> pause &nbsp;·&nbsp; <b>M</b> mute &nbsp;·&nbsp; gamepad supported</p>
 <div id="touch" hidden>
   <div id="tc-stick"><div id="tc-nub"></div></div>
   <button class="tc-btn" id="tc-jump" type="button">JUMP</button>
   <button class="tc-btn" id="tc-punch" type="button">SOCK</button>
-  <button class="tc-btn" id="tc-pause" type="button">II</button>
+  <button class="tc-btn" id="tc-pause" type="button" aria-label="Pause">II</button>
+  <button class="tc-btn" id="tc-full" type="button" aria-label="Full screen">⛶</button>
 </div>
 <script>
 (function () {
@@ -2184,9 +2209,10 @@ class Boss {
     ink(rrect(x - 46, y + 20, 92, 16, 3), C.ink, 0); label('BRAGG HAULAGE', x, y + 29, 10, C.cream, FONT.sign, 'center');
     ink(rrect(x - 34, y - 26, 68, 40, 4), C.tealLt, 3);
     X.save(); X.clip(rrect(x - 34, y - 26, 68, 40, 4));
-    // the man himself: beard, cap, cigar
-    ink(circ(x, y - 4, 15), '#e2a47a', 2.6); ink(ell(x, y + 10, 19, 13), '#3b3a3a', 2.6);
-    ink(poly([[x - 17, y - 14], [x + 17, y - 14], [x + 14, y - 26], [x - 14, y - 26]]), C.navy, 2.6); line([[x - 20, y - 13], [x + 22, y - 13]], 4);
+    // the man himself: top hat, walrus moustache, cigar
+    ink(ell(x, y, 15, 15), '#eab08a', 2.6); ink(ell(x + 1, y + 1, 4.6, 4), C.red, 2);
+    const mo = new Path2D(); mo.moveTo(x - 13, y + 6); mo.quadraticCurveTo(x, y + 1, x + 13, y + 6); mo.quadraticCurveTo(x + 10, y + 15, x, y + 10); mo.quadraticCurveTo(x - 10, y + 15, x - 13, y + 6); mo.closePath(); ink(mo, '#d6d2c4', 2);
+    ink(rrect(x - 11, y - 32, 22, 20, 1.5), C.ink, 2); X.fillStyle = C.red; X.fillRect(x - 10, y - 16, 20, 3); line([[x - 18, y - 12], [x + 18, y - 12]], 3.6);
     X.fillStyle = C.ink; if (wrecked || this.flash > 0) { eyeX(x - 6, y - 6, 2.6); eyeX(x + 6, y - 6, 2.6); } else { X.beginPath(); X.arc(x - 6, y - 6, 2, 0, TAU); X.arc(x + 6, y - 6, 2, 0, TAU); X.fill(); line([[x - 11, y - 11], [x - 2, y - 8]], 2.6); line([[x + 11, y - 11], [x + 2, y - 8]], 2.6); }
     line([[x + 4, y + 4], [x + 20, y + 1]], 4.6); line([[x + 4, y + 4], [x + 20, y + 1]], 2, C.woodDk);
     X.restore();
@@ -2215,6 +2241,216 @@ function stageGantry() {
   return st;
 }
 const STAGES = [stagePier, stageShip, stageGantry];
+
+// ===== 55_story.js
+// ───────────────────────────── comic-page prologues, one before each strip
+// Original stories set in the world of the 1929 strip: Castor Oyl's leaky ship,
+// his sister Olive, and a one-eyed sailor hired off the docks.
+
+// Barnacle Bragg, owner of Bragg Haulage: top hat, walrus moustache, monocle, a belly full of other people's money.
+STYLE.bragg = {
+  shirt: '#2a2622', sleeve: '#2a2622', sleeveDk: '#1c1915', pants: '#7d7f78', pantsDk: '#62645e', skin: '#eab08a', shoe: C.ink,
+  legW: 7, armW: 7, torsoW: 21, fist: 7.6, hip: 22, torsoL: 28, neck: 10,
+  deco(hx, hy, sx, sy) {
+    X.fillStyle = C.mustard; X.fillRect(hx - 9, sy - 2, 18, hy - sy + 2);
+    X.strokeStyle = C.ink; X.lineWidth = 1.4; X.strokeRect(hx - 9, sy - 2, 18, hy - sy + 2);
+    X.strokeStyle = C.cream; X.lineWidth = 1.6; X.beginPath(); X.moveTo(hx - 8, hy - 14); X.quadraticCurveTo(hx, hy - 6, hx + 8, hy - 14); X.stroke();
+    X.fillStyle = C.ink; for (let i = 0; i < 3; i++) { X.beginPath(); X.arc(hx, sy + 6 + i * 7, 1.4, 0, TAU); X.fill(); }
+  },
+  head(expr) {
+    ink(circ(-9, 1, 3.4), '#d69a74', 2.2);
+    ink(ell(1, 1, 11, 12), '#eab08a', 2.6);
+    ink(ell(9.5, -0.5, 4.6, 4), C.red, 2.2);                                   // a nose that has seen a lot of port
+    // walrus moustache
+    const m = new Path2D(); m.moveTo(-2, 4); m.quadraticCurveTo(6, 1, 15, 4.6); m.quadraticCurveTo(14, 12, 9, 9.4); m.quadraticCurveTo(6, 13, 3, 9.4); m.quadraticCurveTo(-1, 12, -2, 4); m.closePath();
+    ink(m, '#d6d2c4', 2.2);
+    if (expr === 'laugh') { X.lineWidth = 2; X.strokeStyle = C.ink; X.beginPath(); X.arc(2.5, -4, 2.4, Math.PI * 1.1, Math.PI * 1.9); X.stroke(); X.beginPath(); X.arc(8, -5, 2, Math.PI * 1.1, Math.PI * 1.9); X.stroke(); }
+    else {
+      X.fillStyle = C.ink; X.beginPath(); X.arc(3, -4, 1.6, 0, TAU); X.fill();
+      ink(circ(8, -4.6, 3.4), 'rgba(220,240,240,.6)', 1.6, false); X.fillStyle = C.ink; X.beginPath(); X.arc(8.4, -4.4, 1.3, 0, TAU); X.fill();   // monocle
+      line([[11, -2], [12.5, 6]], 0.9, C.mustard);
+      line([[-1, -8], [5, expr === 'mad' ? -6 : -8.4]], 2.4);
+    }
+    line([[12, 7.4], [22, 4]], 4.4); line([[12, 7.4], [22, 4]], 2, C.woodDk);   // cigar
+    // top hat
+    ink(rrect(-9.5, -27, 19, 18, 1.5), C.ink, 2.2); X.fillStyle = C.red; X.fillRect(-9, -14, 18, 3.4);
+    line([[-15, -9.5], [15, -10.5]], 3.6);
+  },
+};
+
+const STORIES = [
+  { title: 'IN WHICH A SAILOR IS HIRED', theme: 'morning', panels: [
+    { bg: 'shed', cap: 'The waterfront, 1929. Castor Oyl has bought a leaky ship on credit and must find a sailor by sundown.',
+      actors: [{ who: 'olive', x: 330, pose: 'read' }], props: [{ type: 'notice', x: 400, y: 120, text: ['SAILOR WANTED', 'NO EXPERIENCE', 'NO QUESTIONS'] }],
+      say: [{ a: 0, text: 'Brother says to hire the first sailor who walks by. Any sailor at all!', dx: -150 }] },
+    { bg: 'pier', cap: 'One walked by.',
+      actors: [{ who: 'olive', x: 150, pose: 'point' }, { who: 'popeye', x: 420, pose: 'walk', flip: true }],
+      say: [{ a: 0, text: 'You there! Are you a sailor?', dx: 30 }, { a: 1, text: 'Lady, I been a sailor since before the sea was wet.', dx: -50 }] },
+    { bg: 'shed', cap: 'But Pier Nine belongs to Bragg Haulage, and Bragg’s boys take a toll from anyone who works it.',
+      actors: [{ who: 'rat', x: 100, pose: 'mad' }, { who: 'rat', x: 185, pose: 'fists' }, { who: 'popeye', x: 470, pose: 'stand', flip: true }],
+      say: [{ a: 0, text: 'New sailors pay double. Cough it up!', dx: 20 }, { a: 2, text: 'The only coin I carries is knuckles.', dx: -70 }] },
+    { bg: 'pier', cap: 'So the sailor’s first job began before he had even signed on.',
+      actors: [{ who: 'olive', x: 110, pose: 'scared' }, { who: 'popeye', x: 300, pose: 'fists' }, { who: 'rat', x: 500, pose: 'fists', flip: true }],
+      say: [{ a: 1, text: 'Stand behind me, Miss Oyl. This won’t take long.', dx: 20 }] },
+  ] },
+  { title: 'IN WHICH THE CARGO IS STOLEN', theme: 'sunset', panels: [
+    { bg: 'pier', cap: 'At dusk a rusty steamer tied up at the end of the pier, low in the water and smelling of fish.',
+      actors: [{ who: 'olive', x: 170, pose: 'point' }, { who: 'popeye', x: 360, pose: 'stand' }], props: [{ type: 'steamer', x: 470 }],
+      say: [{ a: 0, text: 'Those are Mr. Haddock’s fish crates! Stolen last week!', dx: 40 }, { a: 1, text: 'Then I’ll un-steal ’em.', dx: 20 }] },
+    { bg: 'crane', cap: 'High over the harbor, in the cab of his crane, Barnacle Bragg was watching.',
+      actors: [{ who: 'bragg', x: 220, pose: 'scope' }],
+      say: [{ a: 0, text: 'A one-eyed sailor, knocking my boys into the drink? Bad for business.', dx: 170 }] },
+    { bg: 'deck', cap: 'The crew of the S.S. Bilgewater did not care for visitors.',
+      actors: [{ who: 'chucker', x: 130, pose: 'mad' }, { who: 'rat', x: 220, pose: 'fists' }, { who: 'popeye', x: 440, pose: 'fist', flip: true }],
+      say: [{ a: 0, text: 'Nobody boards without a ticket!', dx: 40 }, { a: 2, text: 'I brung me own ticket.', dx: -40 }] },
+    { bg: 'deck', cap: 'Olive came too. Nobody could have stopped her.',
+      actors: [{ who: 'popeye', x: 220, pose: 'stand' }, { who: 'olive', x: 380, pose: 'can', flip: true }],
+      say: [{ a: 1, text: 'I packed spinach, in case you get peckish.', dx: -30 }, { a: 0, text: 'Good thinkin’, Olive.', dx: -20 }] },
+  ] },
+  { title: 'IN WHICH THE LANDLORD COLLECTS', theme: 'storm', panels: [
+    { bg: 'storm', cap: 'That night a storm rolled in, and Bragg’s men came for the one thing the sailor cared about.',
+      actors: [{ who: 'rat', x: 220, pose: 'carry' }, { who: 'rat', x: 330, pose: 'carry' }, { who: 'olive', x: 330, y: -84, pose: 'carried', rot: -1.45 }],
+      say: [{ a: 2, text: 'Put me down, you overgrown barnacles!', dx: 0 }] },
+    { bg: 'gantry', cap: 'They hung her from the gantry, forty feet above the pier.',
+      actors: [{ who: 'olive', x: 170, y: -64, pose: 'scared', net: true }, { who: 'bragg', x: 430, pose: 'laugh', flip: true }],
+      say: [{ a: 1, text: 'Come and get her, sailor! The view is lovely from up there!', dx: -60 }] },
+    { bg: 'storm', cap: 'Popeye had one can of spinach left.',
+      actors: [{ who: 'popeye', x: 290, pose: 'can' }],
+      say: [{ a: 0, text: 'Nobody hangs Olive Oyl out to dry.', dx: 30 }] },
+    { bg: 'crane', cap: 'The tallest crane. The meanest landlord on the waterfront. The last strip.',
+      actors: [{ who: 'bragg', x: 240, pose: 'laugh' }],
+      say: [{ a: 0, text: 'Let him come! I own this harbor!', dx: 160 }], storm: true },
+  ] },
+];
+
+const STORY_SCALE = { popeye: 1.5, olive: 1.35, rat: 1.4, bruiser: 1.7, chucker: 1.35, plank: 1.45, bragg: 1.45 };
+const STORY_HEAD = { popeye: 84, olive: 98, rat: 74, bruiser: 72, chucker: 74, plank: 72, bragg: 82 };
+
+function wrapText(text, maxW, size, font) {
+  X.font = `${size}px ${font}`; const out = []; let cur = '';
+  for (const w of text.split(' ')) { const t = cur ? cur + ' ' + w : w; if (X.measureText(t).width > maxW && cur) { out.push(cur); cur = w; } else cur = t; }
+  if (cur) out.push(cur); return out;
+}
+function storyPose(name, who, t) {
+  const tall = who === 'olive', base = tall ? { lf: [-5, 0], rf: [5, 0], lh: [-9, -44 + sin(t * 2) * 1.2], rh: [10, -45] } : { lf: [-7, 0], rf: [7, 0], lh: [-12, -27 + sin(t * 2.4)], rh: [13, -28] };
+  const p = Object.assign({ lean: 0.04, bob: 0, expr: '' }, base);
+  const ph = t * 7;
+  switch (name) {
+    case 'walk': p.lf = [-5 + cos(ph) * 10, -Math.max(0, sin(ph)) * 7]; p.rf = [5 - cos(ph) * 10, -Math.max(0, -sin(ph)) * 7]; p.lh = [-10 - cos(ph) * 9, -28]; p.rh = [12 + cos(ph) * 9, -29]; p.bob = -abs(sin(ph)) * 2; p.lean = 0.12; p.puff = (t * 0.6) % 1; break;
+    case 'read': p.rh = [8, -70]; p.lh = [14, -60]; p.expr = ''; break;
+    case 'point': p.rh = [38, -74]; p.expr = 'cheer'; break;
+    case 'scared': p.expr = tall ? 'scared' : 'ow'; p.lh = [-14, tall ? -88 : -52]; p.rh = [14, tall ? -90 : -54]; if (tall) { p.lh[1] += sin(t * 20) * 3; p.rh[1] += cos(t * 20) * 3; } break;
+    case 'fists': p.lh = [18, -40]; p.rh = [26, -44]; p.fistL = p.fistR = 1.3; p.expr = who === 'popeye' ? 'grit' : 'mad'; p.lean = -0.05; p.bob = sin(t * 6) * 1; break;
+    case 'fist': p.rh = [30, -56]; p.fistR = 1.8; p.bendR = -4; p.expr = 'grit'; break;
+    case 'mad': p.lh = [-14, -30]; p.rh = [30, -36]; p.fistR = 1.3; p.expr = 'mad'; p.lean = 0.12; break;
+    case 'carry': p.lh = [-4, -62]; p.rh = [8, -64]; p.lean = 0.18; p.expr = 'mad'; p.lf = [-5 + cos(ph) * 7, -Math.max(0, sin(ph)) * 5]; p.rf = [5 - cos(ph) * 7, -Math.max(0, -sin(ph)) * 5]; break;
+    case 'carried': p.expr = 'scared'; p.lh = [-14, -88]; p.rh = [14, -90]; p.lf = [-8 + sin(t * 18) * 8, -6]; p.rf = [8 - sin(t * 18) * 8, -10]; p.skirtK = 0.8; break;
+    case 'can': p.rh = [22, tall ? -58 : -40]; p.expr = who === 'popeye' ? 'grit' : 'cheer'; break;
+    case 'scope': p.rh = [26, -60]; p.lh = [18, -56]; p.lean = -0.05; break;
+    case 'laugh': p.lh = [-10, -22]; p.rh = [12, -24]; p.expr = 'laugh'; p.lean = -0.12; p.bob = abs(sin(t * 9)) * -2; p.tilt = -0.15; break;
+  }
+  return p;
+}
+function storyBg(kind, th, w, h, t) {
+  const gy = h - 44;
+  const sky = (a) => { X.fillStyle = th.sky; X.fillRect(0, 0, w, h); X.fillStyle = Pat.dots(th.dots, 2.6, 9); X.fillRect(0, 0, w, h * (a || 0.6)); };
+  const sea = (y) => { X.fillStyle = th.sea; X.fillRect(0, y, w, h - y); line([[0, y], [w, y]], 2); X.strokeStyle = C.ink; X.lineWidth = 1.6; for (let i = 0; i < 7; i++) { const x = (i * 97 + t * 14) % (w + 40) - 20, yy = y + 12 + (i % 3) * 12; X.beginPath(); X.moveTo(x, yy); X.quadraticCurveTo(x + 10, yy - 4, x + 20, yy); X.stroke(); } };
+  const deck = () => { ink(rrect(-10, gy, w + 20, 70, 0), C.wood, 3); for (let x = 30; x < w; x += 60) line([[x, gy], [x, gy + 10]], 1.4); X.fillStyle = Pat.lines('rgba(29,26,22,.18)', 1.2, 9); X.fillRect(0, gy, w, 50); };
+  if (kind === 'pier' || kind === 'shed') {
+    sky(0.55); ink(circ(w - 90, 70, 34), th.sun, 2.6);
+    X.fillStyle = th.far; [[40, 50, 60], [120, 40, 90], [260, 60, 50], [380, 30, 70]].forEach(([x, bw, bh]) => X.fillRect(x, h * 0.55 - bh, bw, bh));
+    sea(h * 0.55); deck();
+    if (kind === 'shed') {
+      ink(poly([[-10, gy], [-10, gy - 150], [270, gy - 150], [270, gy]]), C.cream, 3); X.save(); X.clip(poly([[-10, gy], [-10, gy - 150], [270, gy - 150], [270, gy]])); X.fillStyle = Pat.lines('rgba(29,26,22,.12)', 1.2, 10); X.fillRect(0, gy - 150, 280, 150); X.restore();
+      ink(poly([[-20, gy - 146], [10, gy - 186], [70, gy - 146], [100, gy - 186], [160, gy - 146], [190, gy - 186], [250, gy - 146], [280, gy - 146]]), C.red, 3);
+      ink(rrect(30, gy - 92, 54, 92, 2), '#2a2622', 3);
+    }
+  } else if (kind === 'deck') {
+    sky(0.6); ink(circ(90, 80, 40), th.sun, 2.6); sea(h * 0.5);
+    ink(rrect(-10, gy - 10, w + 20, 80, 0), '#23262b', 3); ink(rrect(-10, gy - 10, w + 20, 12, 0), C.wood, 2.4);
+    line([[0, gy - 46], [w, gy - 46]], 3); for (let x = 20; x < w; x += 46) line([[x, gy - 46], [x, gy - 10]], 2.2);
+    ink(poly([[w - 120, gy - 10], [w - 112, gy - 200], [w - 50, gy - 200], [w - 42, gy - 10]]), C.red, 3); ink(rrect(w - 116, gy - 200, 70, 26, 2), C.ink, 0);
+  } else if (kind === 'storm' || kind === 'gantry') {
+    sky(0.7); paintRainLocal(w, h, t); sea(h * 0.55); deck();
+    X.fillStyle = 'rgba(29,26,22,.18)'; X.fillRect(0, 0, w, h);
+    if (kind === 'gantry') { ink(rrect(-10, 20, w + 20, 22, 0), C.red, 3); const z = []; for (let x = 0; x < w; x += 22) z.push([x, (x / 22) % 2 ? 22 : 40]); line(z, 2); ink(rrect(w - 90, 40, 34, gy - 40, 0), C.red, 3); }
+  } else if (kind === 'crane') {
+    sky(0.8); if (th.rain) paintRainLocal(w, h, t);
+    ink(rrect(-10, -10, w + 20, h + 20, 0), '#3a2e26', 0);     // inside the cab
+    ink(rrect(60, 30, w - 120, h - 110, 8), th.sky, 4);
+    X.save(); X.clip(rrect(60, 30, w - 120, h - 110, 8)); X.fillStyle = Pat.dots(th.dots, 2.6, 9); X.fillRect(0, 0, w, h); X.fillStyle = th.far; [[80, 60, 70], [170, 40, 100], [300, 70, 60], [420, 40, 90]].forEach(([x, bw, bh]) => X.fillRect(x, h - 80 - bh, bw, bh)); X.fillStyle = th.sea; X.fillRect(0, h - 80, w, 80); if (th.rain) paintRainLocal(w, h, t); X.restore();
+    line([[w / 2, 30], [w / 2, h - 80]], 4); ink(rrect(-10, gy - 4, w + 20, 60, 0), '#2a2622', 3);
+    ink(rrect(w - 140, gy - 50, 14, 50, 2), C.steel, 2.4); ink(circ(w - 133, gy - 54, 8), C.red, 2.4); ink(rrect(w - 100, gy - 40, 14, 40, 2), C.steel, 2.4); ink(circ(w - 93, gy - 44, 8), C.mustard, 2.4);
+  }
+}
+function paintRainLocal(w, h, t) {
+  X.strokeStyle = 'rgba(29,26,22,.4)'; X.lineWidth = 1.5; X.beginPath();
+  for (let i = 0; i < 40; i++) { const x = ((i * 137 + t * 300) % (w + 60)) - 30, y = ((i * 89 + t * 900) % (h + 40)) - 20; X.moveTo(x, y); X.lineTo(x - 8, y + 24); }
+  X.stroke();
+}
+function storyProp(pr, gy, t) {
+  if (pr.type === 'notice') {
+    const x = pr.x, y = pr.y; line([[x + 20, y + 90], [x + 20, gy]], 6); line([[x + 120, y + 90], [x + 120, gy]], 6);
+    ink(rrect(x, y, 140, 92, 3), C.white, 3); pr.text.forEach((s, i) => label(s, x + 70, y + 22 + i * 26, i ? 17 : 20, i ? C.ink : C.red, FONT.sign, 'center'));
+  } else if (pr.type === 'steamer') {
+    const x = pr.x, y = gy - 30; ink(poly([[x, y - 30], [x + 200, y - 30], [x + 200, y + 40], [x + 30, y + 40]]), '#23262b', 3); ink(rrect(x + 70, y - 100, 40, 70, 2), C.red, 3);
+    label('BILGEWATER', x + 115, y - 8, 16, C.cream, FONT.sign, 'center');
+    for (let i = 0; i < 3; i++) ink(rrect(x + 130 + i * 4, y - 66 + i * 20, 46, 18, 2), C.wood, 2);
+    X.fillStyle = 'rgba(239,226,192,.8)'; for (let i = 0; i < 3; i++) { X.beginPath(); X.arc(x + 90 + i * 14 + sin(t + i) * 4, y - 110 - i * 18, 8 + i * 3, 0, TAU); X.fill(); }
+  }
+}
+function storyBalloon(x, y, lines, tx, ty, k) {
+  const size = 21, lh = 23, w = Math.max(...lines.map((l) => textW(l, size))) + 34, h = lines.length * lh + 18;
+  X.save(); X.translate(x, y); X.scale(k, k); X.translate(-x, -y);
+  const box = new Path2D(); box.ellipse(x, y, w / 2 + 8, h / 2 + 6, 0, 0, TAU);
+  const ang = Math.atan2(ty - y, tx - x), bx = x + cos(ang) * (w / 2 - 4) * 0.8, by = y + sin(ang) * (h / 2) * 0.8, nx = -sin(ang) * 9, ny = cos(ang) * 9;
+  const tail = poly([[bx + nx, by + ny], [tx, ty], [bx - nx, by - ny]]);
+  ink(tail, C.white, 2.4); ink(box, C.white, 2.6); X.fillStyle = C.white; X.fill(poly([[bx + nx * 0.7, by + ny * 0.7], [lerp(bx, tx, 0.3), lerp(by, ty, 0.3)], [bx - nx * 0.7, by - ny * 0.7]]));
+  lines.forEach((l, i) => label(l, x, y - (lines.length - 1) * lh / 2 + i * lh + 1, size, C.ink, FONT.cap, 'center'));
+  X.restore();
+}
+function drawStoryPanel(st, pn, x, y, w, h, t, k) {
+  const th = THEME[st.theme], gy = h - 44;
+  X.save(); X.translate(x, y);
+  const frame = rrect(0, 0, w, h, 2);
+  X.save(); X.clip(frame);
+  storyBg(pn.bg, th, w, h, t);
+  if (pn.storm) paintRainLocal(w, h, t);
+  for (const pr of pn.props || []) storyProp(pr, gy, t);
+  const heads = [];
+  pn.actors.forEach((a) => {
+    const s = STORY_SCALE[a.who], ay = gy + (a.y || 0), p = storyPose(a.pose, a.who, t + a.x * 0.01);
+    X.save(); X.translate(a.x, ay); if (a.rot) X.rotate(a.rot); X.scale((a.flip ? -1 : 1) * s, s);
+    rig(STYLE[a.who], p, t); X.restore();
+    if (a.pose === 'can') { const hx = a.x + (a.flip ? -1 : 1) * p.rh[0] * s, hy = ay + p.rh[1] * s - 14; drawCan(hx, hy, 1.1); }
+    if (a.pose === 'scope') { X.save(); X.translate(a.x + 30 * s, ay - 62 * s); X.rotate(-0.25); ink(rrect(0, -6, 70, 12, 3), C.mustard, 2.4); ink(rrect(60, -8, 16, 16, 2), C.steel, 2.2); X.restore(); }
+    if (a.net) { const nx = a.x, top = ay - 150, bot = ay + 14; line([[nx, -10], [nx, top]], 3); const net = new Path2D(); net.moveTo(nx, top); net.quadraticCurveTo(nx - 60, ay - 60, nx - 36, bot); net.quadraticCurveTo(nx, bot + 18, nx + 36, bot); net.quadraticCurveTo(nx + 60, ay - 60, nx, top); X.lineWidth = 2.2; X.strokeStyle = C.ink; X.stroke(net); X.save(); X.clip(net); X.globalAlpha = 0.7; X.beginPath(); for (let i = -8; i <= 8; i++) { X.moveTo(nx + i * 12 - 90, top); X.lineTo(nx + i * 12 + 90, bot + 30); X.moveTo(nx + i * 12 + 90, top); X.lineTo(nx + i * 12 - 90, bot + 30); } X.stroke(); X.restore(); }
+    const hh = STORY_HEAD[a.who] * s;
+    heads.push(a.rot ? [a.x + sin(a.rot) * hh * 0.85, ay - cos(a.rot) * hh * 0.85] : [a.x + (a.flip ? -1 : 1) * 8 * s, ay - hh]);
+  });
+  // narration box
+  const capLines = wrapText(pn.cap, w - 40, 17, FONT.type), ch = capLines.length * 20 + 14;
+  ink(rrect(8, 8, Math.min(w - 16, Math.max(...capLines.map((l) => textW(l, 17, FONT.type))) + 24), ch, 2), C.cream, 2.4);
+  capLines.forEach((l, i) => label(l, 20, 8 + 17 + i * 20, 17, C.ink, FONT.type));
+  // balloons, one after the other
+  // place every balloon first (so later ones dodge earlier ones), then draw them in turn
+  const placed = [], over = (a, b) => abs(a.x - b.x) < (a.w + b.w) / 2 + 8 && abs(a.y - b.y) < (a.h + b.h) / 2 + 6;
+  (pn.say || []).forEach((sb) => {
+    const [hx, hy] = heads[sb.a], lines = wrapText(sb.text, 200, 21, FONT.cap), bh = lines.length * 23 + 22, bw = Math.max(...lines.map((l) => textW(l, 21))) + 50;
+    const r = { x: hx + (sb.dx || 0), y: Math.max(hy - 30 - bh / 2 + (sb.dy || 0), ch + 16 + bh / 2), w: bw, h: bh, lines, hx, hy };
+    if (r.y + bh / 2 > hy - 6) { const side = hx < w / 2 ? 1 : -1; r.x = hx + side * (bw / 2 + 30); }   // don't sit on the speaker's face
+    r.x = clamp(r.x, bw / 2 + 12, w - bw / 2 - 12);
+    for (const q of placed) if (over(r, q)) {
+      r.x = clamp(r.x >= q.x ? q.x + (q.w + bw) / 2 + 10 : q.x - (q.w + bw) / 2 - 10, bw / 2 + 12, w - bw / 2 - 12);
+      if (over(r, q)) r.y = q.y + (q.h + bh) / 2 + 8;
+    }
+    r.y = Math.min(r.y, h - bh / 2 - 10); placed.push(r);
+  });
+  placed.forEach((r, i) => { const kk = clamp((k - 0.25 - i * 0.55) * 3, 0, 1); if (kk > 0) storyBalloon(r.x, r.y, r.lines, r.hx, r.hy - 4, outBack(kk)); });
+  X.restore();
+  X.lineWidth = 4; X.strokeStyle = C.ink; X.stroke(frame);
+  X.restore();
+}
 
 // ===== 60_game.js
 // ───────────────────────────── game: rules, scoring, flow, HUD, screens
@@ -2349,14 +2585,15 @@ Object.assign(G, {
   keyName(k) { return Input.touch.active ? { punch: 'SOCK', jump: 'JUMP' }[k] : Input.padSeen ? { punch: 'Ⓧ', jump: 'Ⓐ' }[k] : { punch: 'J', jump: 'SPACE' }[k]; },
 
   // ── flow
-  loadStage(i) {
+  loadStage(i, retry) {
     World.reset(); FX.reset(); this.enemies = []; this.props = []; this.stageIdx = i;
     this.stage = STAGES[i](); this.player = new Player(this.stage.start.x, this.stage.start.y);
     Object.assign(this, { score: 0, cats: {}, chain: 0, chainT: 0, bestChain: 0, mult: 1, meter: i ? 0.35 : 0, canOut: false, gullT: 0, gull: null, waveIdx: -1, queue: [], waveClock: 0, between: 1.6, cleared: false, clearT: 0, overT: 0, time: 0, hint: null, hintQ: [], banner: null, hitstopT: 0, slowT: 0, shakeAmt: 0, zoom: 1, hurtFlash: 0 });
     this.stats = { kos: 0, dunks: 0, bends: 0 };
     this.olive = this.stage.olive ? new Olive(this.stage.olive.x, this.stage.olive.y, this.stage.olive) : null;
     this.cam.x = clamp(this.player.b.x - W / 2, 0, this.stage.width - W);
-    this.mode = 'card'; this.cardT = 0; Sfx.stop();
+    this.mode = !retry && STORIES[i] ? 'story' : 'card'; this.cardT = 0; this.storyIdx = 0; this.storyT = 0; this.panelT = 0; Sfx.stop();
+    if (this.mode === 'story') Sfx.play('liverpool', { drums: false, calm: true });
   },
   startPlay() {
     this.mode = 'play'; Sfx.play(this.stage.music, this.stage.id === 2 ? { oct: -1, start: 3 } : { start: this.stage.id * 2 });
@@ -2391,6 +2628,17 @@ Object.assign(G, {
     switch (this.mode) {
       case 'title': this.tickMenu(this.titleItems(), I); break;
       case 'how': if (I.confirmP || I.pauseP) { this.mode = 'title'; Sfx.blip(); } break;
+      case 'story': {
+        this.storyT += dt; this.panelT += dt; const n = STORIES[this.stageIdx].panels.length;
+        if (I.pauseP) { this.mode = 'card'; this.cardT = 0; Sfx.stop(); Sfx.blip(); break; }
+        if (I.confirmP && this.panelT > 0.25) {
+          const need = 0.4 + (STORIES[this.stageIdx].panels[this.storyIdx].say || []).length * 0.55;
+          if (this.panelT < need) this.panelT = need + 0.1;
+          else if (this.storyIdx + 1 < n) { this.storyIdx++; this.panelT = 0; Sfx.stamp(); }
+          else { this.mode = 'card'; this.cardT = 0; Sfx.stop(); Sfx.blip(true); }
+        }
+        break;
+      }
       case 'card': this.cardT += dt; if ((I.confirmP && this.cardT > 0.4) || this.cardT > 3.4) this.startPlay(); break;
       case 'play': this.tickPlay(dt, I); break;
       case 'pause': if (I.pauseP) { this.mode = 'play'; Sfx.blip(); } else this.tickMenu(this.pauseItems(), I); break;
@@ -2415,8 +2663,8 @@ Object.assign(G, {
     it.push(['HOW TO BRAWL', () => { this.mode = 'how'; }], ['SOUND: ' + (Sfx.muted ? 'OFF' : 'ON'), () => Sfx.toggleMute()]);
     return it;
   },
-  pauseItems() { return [['BACK TO IT', () => { this.mode = 'play'; }], ['START THIS STRIP OVER', () => this.loadStage(this.stageIdx)], ['SOUND: ' + (Sfx.muted ? 'OFF' : 'ON'), () => Sfx.toggleMute()], ['QUIT TO TITLE', () => this.toTitle()]]; },
-  overItems() { return [['TRY THAT STRIP AGAIN', () => this.loadStage(this.stageIdx)], ['QUIT TO TITLE', () => this.toTitle()]]; },
+  pauseItems() { return [['BACK TO IT', () => { this.mode = 'play'; }], ['START THIS STRIP OVER', () => this.loadStage(this.stageIdx, true)], ['SOUND: ' + (Sfx.muted ? 'OFF' : 'ON'), () => Sfx.toggleMute()], ['QUIT TO TITLE', () => this.toTitle()]]; },
+  overItems() { return [['TRY THAT STRIP AGAIN', () => this.loadStage(this.stageIdx, true)], ['QUIT TO TITLE', () => this.toTitle()]]; },
   tickMenu(items, I) {
     if (I.downP) { this.menu = (this.menu + 1) % items.length; Sfx.blip(); }
     if (I.upP) { this.menu = (this.menu + items.length - 1) % items.length; Sfx.blip(); }
@@ -2499,6 +2747,7 @@ Object.assign(G, {
     if (m === 'play' || m === 'pause' || m === 'over') this.drawWorld();
     else if (m === 'title' || m === 'how') this.drawTitle();
     else if (m === 'card') this.drawCard();
+    else if (m === 'story') this.drawStory();
     else if (m === 'bill') this.drawBill();
     else if (m === 'end') this.drawEnd();
     if (m === 'pause') this.drawMenu('PAUSED', this.pauseItems(), 'The harbor will wait.');
@@ -2593,6 +2842,7 @@ Object.assign(G, {
     ink(rrect(-300, -h / 2, 600, h, 6), C.cream, 5);
     sock(title, 0, -h / 2 + 62, 58, C.red, 0, FONT.sign);
     label(sub, 0, -h / 2 + 114, 19, C.ink, FONT.type, 'center');
+    this.menuHit = items.map((it, i) => ({ x: W / 2 - 240, y: H / 2 - h / 2 + 168 + i * 54 - 25, w: 480, h: 50, i }));
     items.forEach((it, i) => { const y = -h / 2 + 168 + i * 54, on = i === this.menu; if (on) { ink(rrect(-230, y - 23, 460, 46, 4), C.mustard, 3); drawFist(-256 + sin(this.clock * 9) * 5, y, 1); } label(it[0], 0, y + 2, 32, C.ink, FONT.cap, 'center', 1); });
     X.restore();
   },
@@ -2617,6 +2867,7 @@ Object.assign(G, {
     X.restore(); drawCan(880, 596, 1.7);
     if (this.mode === 'title') {
       const items = this.titleItems();
+      this.menuHit = items.map((it, i) => ({ x: 120, y: 492 + i * 40 - 20, w: 410, h: 40, i }));
       items.forEach((it, i) => { const y = 492 + i * 40, on = i === this.menu; if (on) { ink(rrect(132, y - 19, 380, 38, 4), C.mustard, 3); drawFist(104 + sin(t * 9) * 5, y, 1); } label(it[0], 150, y + 2, 28, C.ink, FONT.cap, 'left', 1.5); });
       if (this.best) caption(W - 40, 30, 'RECORD DAMAGES  ' + money(this.best), 22, C.cream, 'right');
       label('Popeye as he first appeared in E. C. Segar’s 1929 newspaper strip. Music: traditional hornpipes and shanties.', W / 2, H - 28, 15, C.white, FONT.type, 'center');
@@ -2627,17 +2878,38 @@ Object.assign(G, {
     X.fillStyle = Pat.dots('rgba(29,26,22,.6)', 3, 8); X.fillRect(0, 0, W, H);
     X.save(); X.translate(W / 2, H / 2); X.rotate(0.008); ink(rrect(-470, -300, 940, 600, 6), C.cream, 5);
     sock('HOW TO BRAWL', 0, -244, 54, C.red, 0, FONT.sign);
-    const rows = [
+    const rows = Input.touch.active ? [
+      [['STICK'], 'WALK THE PLANKS', 'left side of the screen'], [['JUMP'], 'JUMP', 'yellow button'], [['SOCK'], 'SOCK ’EM', 'three quick ones end in a haymaker'],
+      [['HOLD SOCK'], 'WIND UP A TWISTER', 'let go to send somebody across the harbor'], [['↑', 'SOCK'], 'UPPERCUT', 'push the stick up while you punch'], [['↓', 'SOCK'], 'DIVE-BOMB', 'in mid-air: shakes the whole pier'],
+    ] : [
       [['A', 'D'], 'WALK THE PLANKS', 'or the arrow keys'], [['SPACE'], 'JUMP', 'also K'], [['J'], 'SOCK ’EM', 'three quick ones end in a haymaker'],
       [['HOLD J'], 'WIND UP A TWISTER', 'let go to send somebody across the harbor'], [['↑', 'J'], 'UPPERCUT', 'aim any punch by holding a direction'], [['↓', 'J'], 'DIVE-BOMB', 'in mid-air: shakes the whole pier'],
     ];
     rows.forEach((r, i) => { const y = -180 + i * 50; let x = -430; for (const key of r[0]) { const w = Math.max(40, textW(key, 22, FONT.sign) + 22); ink(rrect(x, y - 19, w, 38, 5), C.white, 2.8); label(key, x + w / 2, y + 2, 20, C.ink, FONT.sign, 'center'); x += w + 8; } label(r[1], -230, y + 1, 30, C.ink, FONT.cap, 'left', 1); label(r[2], 40, y + 2, 17, C.ink, FONT.type); });
     ink(rrect(-430, 132, 860, 104, 4), C.greenLt, 3); drawCan(-388, 184, 1.5);
     label('SPINACH', -350, 158, 30, C.ink, FONT.cap, 'left', 1);
-    label('Keep a chain going and a gull brings a can. For a few seconds your fists bend the', -350, 188, 16.5, C.ink, FONT.type);
-    label('harbor itself: ↑+J peels up a ramp, ↓+J digs a crater, and walls, hulls and cranes dent.', -350, 212, 16.5, C.ink, FONT.type);
+    label('Keep a chain going and Olive (or a gull) brings a can. For a few seconds your fists bend the', -350, 188, 16.5, C.ink, FONT.type);
+    label('harbor itself: ↑ + punch peels up a ramp, ↓ + punch digs a crater, walls and cranes dent.', -350, 212, 16.5, C.ink, FONT.type);
     label('Every ricochet goes on the bill.   ·   Gamepad works too.   ·   ' + (Input.touch.active ? 'TAP' : 'J / ENTER') + ' — BACK', 0, 268, 16, C.ink, FONT.type, 'center');
     X.restore();
+  },
+  drawStory() {
+    const st = STORIES[this.stageIdx], stage = this.stage, th = THEME[st.theme];
+    X.fillStyle = C.paper; X.fillRect(0, 0, W, H);
+    X.fillStyle = Pat.dots('rgba(29,26,22,.08)', 2, 9); X.fillRect(0, 0, W, H);
+    label(stage.strip + '  ·  ' + stage.name, 40, 38, 30, C.red, FONT.sign);
+    label(st.title, W - 40, 38, 24, C.ink, FONT.cap, 'right', 1.5);
+    const gx = 34, gy = 62, gap = 18, pw = (W - gx * 2 - gap) / 2, ph = (H - gy - 58 - gap) / 2;
+    st.panels.forEach((pn, i) => {
+      if (i > this.storyIdx) { X.save(); X.setLineDash([8, 8]); X.lineWidth = 2; X.strokeStyle = 'rgba(29,26,22,.25)'; X.strokeRect(gx + (i % 2) * (pw + gap), gy + Math.floor(i / 2) * (ph + gap), pw, ph); X.restore(); return; }
+      const k = i === this.storyIdx ? this.panelT : 99, pop = outBack(Math.min(1, k * 4)), x = gx + (i % 2) * (pw + gap), y = gy + Math.floor(i / 2) * (ph + gap);
+      X.save(); X.translate(x + pw / 2, y + ph / 2); X.scale(0.9 + 0.1 * pop, 0.9 + 0.1 * pop); X.rotate((1 - pop) * 0.04); X.translate(-pw / 2, -ph / 2);
+      X.globalAlpha = Math.min(1, k * 5); drawStoryPanel(st, pn, 0, 0, pw, ph, this.storyT, k); X.restore();
+    });
+    const last = this.storyIdx === st.panels.length - 1, tap = Input.touch.active ? 'TAP' : 'J / ENTER', skip = Input.touch.active ? 'II  SKIP' : 'ESC  SKIP';
+    label(tap + ' — ' + (last ? 'BEGIN THE STRIP' : 'NEXT PANEL'), W / 2, H - 26, 24, C.ink, FONT.cap, 'center', 2);
+    label(skip, W - 40, H - 26, 20, C.ink, FONT.cap, 'right', 1.5);
+    this.frame(true);
   },
   drawCard() {
     const st = this.stage, k = outCubic(this.cardT * 2.2);
@@ -2719,6 +2991,9 @@ function boot() {
   addEventListener('resize', resize); resize();
   Input.setGesture(() => Sfx.init());
   addEventListener('pointerdown', () => Sfx.init());
+  addEventListener('touchend', () => Sfx.init(), { passive: true }); addEventListener('click', () => Sfx.init());
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  document.addEventListener('dblclick', (e) => e.preventDefault());
   // touch controls
   const tc = document.getElementById('touch');
   if (tc) {
@@ -2731,8 +3006,26 @@ function boot() {
     stick.addEventListener('pointerup', end); stick.addEventListener('pointercancel', end);
     const btn = (id, key) => { const el = document.getElementById(id); el.addEventListener('pointerdown', (e) => { Input.touch[key] = true; e.preventDefault(); Sfx.init(); }); const up = () => { if (key !== 'pause') Input.touch[key] = false; }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up); };
     btn('tc-punch', 'punch'); btn('tc-jump', 'jump'); btn('tc-pause', 'pause');
-    cv.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') on(); if (e.pointerType === 'touch' && G.mode !== 'play') { Input.touch.punch = true; setTimeout(() => { Input.touch.punch = false; }, 80); } });
+    if (matchMedia('(pointer: coarse)').matches) on();
+    const full = document.getElementById('tc-full'), fsOk = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+    if (!fsOk) full.hidden = true;
+    full.addEventListener('click', () => {
+      const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (document.fullscreenElement || document.webkitFullscreenElement) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+      if (!req) return;
+      try { Promise.resolve(req.call(el)).then(() => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* no lock */ } setTimeout(resize, 200); }).catch(() => {}); } catch (e) { /* refused */ }
+    });
+    addEventListener('fullscreenchange', () => setTimeout(resize, 100));
+    addEventListener('orientationchange', () => setTimeout(resize, 250));
   }
+  cv.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch' && tc) { Input.touch.active = true; if (tc.hidden) { tc.hidden = false; resize(); } }
+    if (G.mode === 'play') return;
+    const r = cv.getBoundingClientRect(), gx = ((e.clientX - r.left) / r.width) * W, gy = ((e.clientY - r.top) / r.height) * H;
+    const menu = G.mode === 'title' || G.mode === 'pause' || G.mode === 'over';
+    if (menu) { const hit = (G.menuHit || []).find((m) => gx >= m.x && gx <= m.x + m.w && gy >= m.y && gy <= m.y + m.h); if (!hit) return; G.menu = hit.i; }
+    Input.touch.punch = true; setTimeout(() => { Input.touch.punch = false; }, 80); e.preventDefault();
+  });
   const STEP = 1 / 60; let last = performance.now(), acc = 0;
   function loop(now) {
     acc += Math.min(0.1, (now - last) / 1000); last = now; let n = 0;

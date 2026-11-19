@@ -31,6 +31,18 @@ Every pass through a tune gets a new arrangement: concertina, concertina with a 
 below, steam calliope, a harmonic-minor version, a tin-whistle jig with grace notes, and a banjo breakdown.
 The drums get busier as more toughs crowd the panel and when you are low on anchors.
 
+## Story
+
+Each strip opens with a four-panel comic page, original stories set in the world of the 1929 strip:
+
+1. **In Which a Sailor Is Hired.** Castor Oyl needs a sailor for his leaky ship by sundown; Olive finds one,
+   and Bragg Haulage's toll collectors find him too.
+2. **In Which the Cargo Is Stolen.** A rusty steamer turns up full of Mr. Haddock's stolen fish crates, and
+   Barnacle Bragg watches from his crane.
+3. **In Which the Landlord Collects.** Bragg's men carry Olive off in a storm and hang her from the gantry.
+
+Tap or press J / Enter to reveal the next panel; Esc (or the pause button) skips. Retrying a strip skips its story.
+
 ## Play
 
 Open `dist/index.html` in a browser. No server or install needed.
@@ -42,7 +54,9 @@ Open `dist/index.html` in a browser. No server or install needed.
 | Punch (tap: jabs → haymaker; hold: wind-up) | J or Z | X / B |
 | Pause · Mute | Esc · M | Start |
 
-Touch devices get an on-screen stick and two buttons.
+On a phone or tablet, open the same page in the browser. You get an on-screen stick (move and aim), JUMP and SOCK
+buttons (hold SOCK to wind up), a pause button and a full-screen button. Menus and story pages are tapped directly.
+Held upright, the game sits at the top with the controls below; turn the phone sideways for a bigger view.
 
 ## Build
 
@@ -59,6 +73,7 @@ No dependencies. `desktop/main.js` is a minimal Electron shell for a desktop bui
     src/30_art.js     ink/halftone rendering, lettering, particles, the rubber-hose character rig
     src/40_actors.js  the sailor, the toughs, barrels, hooks, bottles, the spinach gull
     src/50_levels.js  the three stages, bell, funnel, and the crane boss
+    src/55_story.js   the comic-page prologues and Barnacle Bragg's look
     src/60_game.js    rules, scoring, flow, HUD, menus, main loop
 
 ## Rights notes (read before selling this)

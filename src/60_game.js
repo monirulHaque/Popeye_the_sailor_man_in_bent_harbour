@@ -130,14 +130,15 @@ Object.assign(G, {
   keyName(k) { return Input.touch.active ? { punch: 'SOCK', jump: 'JUMP' }[k] : Input.padSeen ? { punch: 'Ⓧ', jump: 'Ⓐ' }[k] : { punch: 'J', jump: 'SPACE' }[k]; },
 
   // ── flow
-  loadStage(i) {
+  loadStage(i, retry) {
     World.reset(); FX.reset(); this.enemies = []; this.props = []; this.stageIdx = i;
     this.stage = STAGES[i](); this.player = new Player(this.stage.start.x, this.stage.start.y);
     Object.assign(this, { score: 0, cats: {}, chain: 0, chainT: 0, bestChain: 0, mult: 1, meter: i ? 0.35 : 0, canOut: false, gullT: 0, gull: null, waveIdx: -1, queue: [], waveClock: 0, between: 1.6, cleared: false, clearT: 0, overT: 0, time: 0, hint: null, hintQ: [], banner: null, hitstopT: 0, slowT: 0, shakeAmt: 0, zoom: 1, hurtFlash: 0 });
     this.stats = { kos: 0, dunks: 0, bends: 0 };
     this.olive = this.stage.olive ? new Olive(this.stage.olive.x, this.stage.olive.y, this.stage.olive) : null;
     this.cam.x = clamp(this.player.b.x - W / 2, 0, this.stage.width - W);
-    this.mode = 'card'; this.cardT = 0; Sfx.stop();
+    this.mode = !retry && STORIES[i] ? 'story' : 'card'; this.cardT = 0; this.storyIdx = 0; this.storyT = 0; this.panelT = 0; Sfx.stop();
+    if (this.mode === 'story') Sfx.play('liverpool', { drums: false, calm: true });
   },
   startPlay() {
     this.mode = 'play'; Sfx.play(this.stage.music, this.stage.id === 2 ? { oct: -1, start: 3 } : { start: this.stage.id * 2 });
@@ -172,6 +173,17 @@ Object.assign(G, {
     switch (this.mode) {
       case 'title': this.tickMenu(this.titleItems(), I); break;
       case 'how': if (I.confirmP || I.pauseP) { this.mode = 'title'; Sfx.blip(); } break;
+      case 'story': {
+        this.storyT += dt; this.panelT += dt; const n = STORIES[this.stageIdx].panels.length;
+        if (I.pauseP) { this.mode = 'card'; this.cardT = 0; Sfx.stop(); Sfx.blip(); break; }
+        if (I.confirmP && this.panelT > 0.25) {
+          const need = 0.4 + (STORIES[this.stageIdx].panels[this.storyIdx].say || []).length * 0.55;
+          if (this.panelT < need) this.panelT = need + 0.1;
+          else if (this.storyIdx + 1 < n) { this.storyIdx++; this.panelT = 0; Sfx.stamp(); }
+          else { this.mode = 'card'; this.cardT = 0; Sfx.stop(); Sfx.blip(true); }
+        }
+        break;
+      }
       case 'card': this.cardT += dt; if ((I.confirmP && this.cardT > 0.4) || this.cardT > 3.4) this.startPlay(); break;
       case 'play': this.tickPlay(dt, I); break;
       case 'pause': if (I.pauseP) { this.mode = 'play'; Sfx.blip(); } else this.tickMenu(this.pauseItems(), I); break;
@@ -196,8 +208,8 @@ Object.assign(G, {
     it.push(['HOW TO BRAWL', () => { this.mode = 'how'; }], ['SOUND: ' + (Sfx.muted ? 'OFF' : 'ON'), () => Sfx.toggleMute()]);
     return it;
   },
-  pauseItems() { return [['BACK TO IT', () => { this.mode = 'play'; }], ['START THIS STRIP OVER', () => this.loadStage(this.stageIdx)], ['SOUND: ' + (Sfx.muted ? 'OFF' : 'ON'), () => Sfx.toggleMute()], ['QUIT TO TITLE', () => this.toTitle()]]; },
-  overItems() { return [['TRY THAT STRIP AGAIN', () => this.loadStage(this.stageIdx)], ['QUIT TO TITLE', () => this.toTitle()]]; },
+  pauseItems() { return [['BACK TO IT', () => { this.mode = 'play'; }], ['START THIS STRIP OVER', () => this.loadStage(this.stageIdx, true)], ['SOUND: ' + (Sfx.muted ? 'OFF' : 'ON'), () => Sfx.toggleMute()], ['QUIT TO TITLE', () => this.toTitle()]]; },
+  overItems() { return [['TRY THAT STRIP AGAIN', () => this.loadStage(this.stageIdx, true)], ['QUIT TO TITLE', () => this.toTitle()]]; },
   tickMenu(items, I) {
     if (I.downP) { this.menu = (this.menu + 1) % items.length; Sfx.blip(); }
     if (I.upP) { this.menu = (this.menu + items.length - 1) % items.length; Sfx.blip(); }
@@ -280,6 +292,7 @@ Object.assign(G, {
     if (m === 'play' || m === 'pause' || m === 'over') this.drawWorld();
     else if (m === 'title' || m === 'how') this.drawTitle();
     else if (m === 'card') this.drawCard();
+    else if (m === 'story') this.drawStory();
     else if (m === 'bill') this.drawBill();
     else if (m === 'end') this.drawEnd();
     if (m === 'pause') this.drawMenu('PAUSED', this.pauseItems(), 'The harbor will wait.');
@@ -374,6 +387,7 @@ Object.assign(G, {
     ink(rrect(-300, -h / 2, 600, h, 6), C.cream, 5);
     sock(title, 0, -h / 2 + 62, 58, C.red, 0, FONT.sign);
     label(sub, 0, -h / 2 + 114, 19, C.ink, FONT.type, 'center');
+    this.menuHit = items.map((it, i) => ({ x: W / 2 - 240, y: H / 2 - h / 2 + 168 + i * 54 - 25, w: 480, h: 50, i }));
     items.forEach((it, i) => { const y = -h / 2 + 168 + i * 54, on = i === this.menu; if (on) { ink(rrect(-230, y - 23, 460, 46, 4), C.mustard, 3); drawFist(-256 + sin(this.clock * 9) * 5, y, 1); } label(it[0], 0, y + 2, 32, C.ink, FONT.cap, 'center', 1); });
     X.restore();
   },
@@ -398,6 +412,7 @@ Object.assign(G, {
     X.restore(); drawCan(880, 596, 1.7);
     if (this.mode === 'title') {
       const items = this.titleItems();
+      this.menuHit = items.map((it, i) => ({ x: 120, y: 492 + i * 40 - 20, w: 410, h: 40, i }));
       items.forEach((it, i) => { const y = 492 + i * 40, on = i === this.menu; if (on) { ink(rrect(132, y - 19, 380, 38, 4), C.mustard, 3); drawFist(104 + sin(t * 9) * 5, y, 1); } label(it[0], 150, y + 2, 28, C.ink, FONT.cap, 'left', 1.5); });
       if (this.best) caption(W - 40, 30, 'RECORD DAMAGES  ' + money(this.best), 22, C.cream, 'right');
       label('Popeye as he first appeared in E. C. Segar’s 1929 newspaper strip. Music: traditional hornpipes and shanties.', W / 2, H - 28, 15, C.white, FONT.type, 'center');
@@ -408,17 +423,38 @@ Object.assign(G, {
     X.fillStyle = Pat.dots('rgba(29,26,22,.6)', 3, 8); X.fillRect(0, 0, W, H);
     X.save(); X.translate(W / 2, H / 2); X.rotate(0.008); ink(rrect(-470, -300, 940, 600, 6), C.cream, 5);
     sock('HOW TO BRAWL', 0, -244, 54, C.red, 0, FONT.sign);
-    const rows = [
+    const rows = Input.touch.active ? [
+      [['STICK'], 'WALK THE PLANKS', 'left side of the screen'], [['JUMP'], 'JUMP', 'yellow button'], [['SOCK'], 'SOCK ’EM', 'three quick ones end in a haymaker'],
+      [['HOLD SOCK'], 'WIND UP A TWISTER', 'let go to send somebody across the harbor'], [['↑', 'SOCK'], 'UPPERCUT', 'push the stick up while you punch'], [['↓', 'SOCK'], 'DIVE-BOMB', 'in mid-air: shakes the whole pier'],
+    ] : [
       [['A', 'D'], 'WALK THE PLANKS', 'or the arrow keys'], [['SPACE'], 'JUMP', 'also K'], [['J'], 'SOCK ’EM', 'three quick ones end in a haymaker'],
       [['HOLD J'], 'WIND UP A TWISTER', 'let go to send somebody across the harbor'], [['↑', 'J'], 'UPPERCUT', 'aim any punch by holding a direction'], [['↓', 'J'], 'DIVE-BOMB', 'in mid-air: shakes the whole pier'],
     ];
     rows.forEach((r, i) => { const y = -180 + i * 50; let x = -430; for (const key of r[0]) { const w = Math.max(40, textW(key, 22, FONT.sign) + 22); ink(rrect(x, y - 19, w, 38, 5), C.white, 2.8); label(key, x + w / 2, y + 2, 20, C.ink, FONT.sign, 'center'); x += w + 8; } label(r[1], -230, y + 1, 30, C.ink, FONT.cap, 'left', 1); label(r[2], 40, y + 2, 17, C.ink, FONT.type); });
     ink(rrect(-430, 132, 860, 104, 4), C.greenLt, 3); drawCan(-388, 184, 1.5);
     label('SPINACH', -350, 158, 30, C.ink, FONT.cap, 'left', 1);
-    label('Keep a chain going and a gull brings a can. For a few seconds your fists bend the', -350, 188, 16.5, C.ink, FONT.type);
-    label('harbor itself: ↑+J peels up a ramp, ↓+J digs a crater, and walls, hulls and cranes dent.', -350, 212, 16.5, C.ink, FONT.type);
+    label('Keep a chain going and Olive (or a gull) brings a can. For a few seconds your fists bend the', -350, 188, 16.5, C.ink, FONT.type);
+    label('harbor itself: ↑ + punch peels up a ramp, ↓ + punch digs a crater, walls and cranes dent.', -350, 212, 16.5, C.ink, FONT.type);
     label('Every ricochet goes on the bill.   ·   Gamepad works too.   ·   ' + (Input.touch.active ? 'TAP' : 'J / ENTER') + ' — BACK', 0, 268, 16, C.ink, FONT.type, 'center');
     X.restore();
+  },
+  drawStory() {
+    const st = STORIES[this.stageIdx], stage = this.stage, th = THEME[st.theme];
+    X.fillStyle = C.paper; X.fillRect(0, 0, W, H);
+    X.fillStyle = Pat.dots('rgba(29,26,22,.08)', 2, 9); X.fillRect(0, 0, W, H);
+    label(stage.strip + '  ·  ' + stage.name, 40, 38, 30, C.red, FONT.sign);
+    label(st.title, W - 40, 38, 24, C.ink, FONT.cap, 'right', 1.5);
+    const gx = 34, gy = 62, gap = 18, pw = (W - gx * 2 - gap) / 2, ph = (H - gy - 58 - gap) / 2;
+    st.panels.forEach((pn, i) => {
+      if (i > this.storyIdx) { X.save(); X.setLineDash([8, 8]); X.lineWidth = 2; X.strokeStyle = 'rgba(29,26,22,.25)'; X.strokeRect(gx + (i % 2) * (pw + gap), gy + Math.floor(i / 2) * (ph + gap), pw, ph); X.restore(); return; }
+      const k = i === this.storyIdx ? this.panelT : 99, pop = outBack(Math.min(1, k * 4)), x = gx + (i % 2) * (pw + gap), y = gy + Math.floor(i / 2) * (ph + gap);
+      X.save(); X.translate(x + pw / 2, y + ph / 2); X.scale(0.9 + 0.1 * pop, 0.9 + 0.1 * pop); X.rotate((1 - pop) * 0.04); X.translate(-pw / 2, -ph / 2);
+      X.globalAlpha = Math.min(1, k * 5); drawStoryPanel(st, pn, 0, 0, pw, ph, this.storyT, k); X.restore();
+    });
+    const last = this.storyIdx === st.panels.length - 1, tap = Input.touch.active ? 'TAP' : 'J / ENTER', skip = Input.touch.active ? 'II  SKIP' : 'ESC  SKIP';
+    label(tap + ' — ' + (last ? 'BEGIN THE STRIP' : 'NEXT PANEL'), W / 2, H - 26, 24, C.ink, FONT.cap, 'center', 2);
+    label(skip, W - 40, H - 26, 20, C.ink, FONT.cap, 'right', 1.5);
+    this.frame(true);
   },
   drawCard() {
     const st = this.stage, k = outCubic(this.cardT * 2.2);
@@ -500,6 +536,9 @@ function boot() {
   addEventListener('resize', resize); resize();
   Input.setGesture(() => Sfx.init());
   addEventListener('pointerdown', () => Sfx.init());
+  addEventListener('touchend', () => Sfx.init(), { passive: true }); addEventListener('click', () => Sfx.init());
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  document.addEventListener('dblclick', (e) => e.preventDefault());
   // touch controls
   const tc = document.getElementById('touch');
   if (tc) {
@@ -512,8 +551,26 @@ function boot() {
     stick.addEventListener('pointerup', end); stick.addEventListener('pointercancel', end);
     const btn = (id, key) => { const el = document.getElementById(id); el.addEventListener('pointerdown', (e) => { Input.touch[key] = true; e.preventDefault(); Sfx.init(); }); const up = () => { if (key !== 'pause') Input.touch[key] = false; }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up); };
     btn('tc-punch', 'punch'); btn('tc-jump', 'jump'); btn('tc-pause', 'pause');
-    cv.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') on(); if (e.pointerType === 'touch' && G.mode !== 'play') { Input.touch.punch = true; setTimeout(() => { Input.touch.punch = false; }, 80); } });
+    if (matchMedia('(pointer: coarse)').matches) on();
+    const full = document.getElementById('tc-full'), fsOk = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+    if (!fsOk) full.hidden = true;
+    full.addEventListener('click', () => {
+      const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (document.fullscreenElement || document.webkitFullscreenElement) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+      if (!req) return;
+      try { Promise.resolve(req.call(el)).then(() => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* no lock */ } setTimeout(resize, 200); }).catch(() => {}); } catch (e) { /* refused */ }
+    });
+    addEventListener('fullscreenchange', () => setTimeout(resize, 100));
+    addEventListener('orientationchange', () => setTimeout(resize, 250));
   }
+  cv.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch' && tc) { Input.touch.active = true; if (tc.hidden) { tc.hidden = false; resize(); } }
+    if (G.mode === 'play') return;
+    const r = cv.getBoundingClientRect(), gx = ((e.clientX - r.left) / r.width) * W, gy = ((e.clientY - r.top) / r.height) * H;
+    const menu = G.mode === 'title' || G.mode === 'pause' || G.mode === 'over';
+    if (menu) { const hit = (G.menuHit || []).find((m) => gx >= m.x && gx <= m.x + m.w && gy >= m.y && gy <= m.y + m.h); if (!hit) return; G.menu = hit.i; }
+    Input.touch.punch = true; setTimeout(() => { Input.touch.punch = false; }, 80); e.preventDefault();
+  });
   const STEP = 1 / 60; let last = performance.now(), acc = 0;
   function loop(now) {
     acc += Math.min(0.1, (now - last) / 1000); last = now; let n = 0;
