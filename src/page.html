@@ -1,0 +1,38 @@
+<title>Bent Harbor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Holtwood+One+SC&family=Luckiest+Guy&family=Mouse+Memoirs&family=Special+Elite&display=swap">
+<style>
+  /* layout: one print of a comic panel lying on a dark press table; controls tucked under it */
+  :root { --table: #15130f; --table-2: #221f19; --paper: #efe2c0; --ink: #1d1a16; --accent: #e2a52c; --muted: #9a8f74; color-scheme: dark;
+    --font-cap: "Mouse Memoirs", "Arial Narrow", Impact, sans-serif; --font-type: "Special Elite", "Courier New", monospace; }
+  html, body { height: 100%; }
+  body { margin: 0; background: radial-gradient(120% 90% at 50% 40%, var(--table-2), var(--table)); color: var(--paper); box-sizing: border-box; overflow: hidden;
+    display: flex; flex-direction: column; gap: 8px; padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    font-family: var(--font-type); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  #stage { flex: 1; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; }
+  #game { display: block; background: var(--paper); border-radius: 2px; box-shadow: 0 2px 0 #000, 0 14px 44px rgba(0, 0, 0, .65); touch-action: none; max-width: 100%; }
+  #keys { margin: 0; text-align: center; font-size: 12.5px; letter-spacing: .04em; color: var(--muted); }
+  #keys b { color: var(--accent); font-weight: normal; }
+  #touch { position: fixed; inset: 0; pointer-events: none; }
+  #touch > * { pointer-events: auto; position: absolute; touch-action: none; }
+  #tc-stick { left: max(18px, env(safe-area-inset-left, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); width: 124px; height: 124px; border-radius: 50%; background: rgba(239, 226, 192, .14); border: 3px solid rgba(239, 226, 192, .5); }
+  #tc-nub { position: absolute; left: 37px; top: 37px; width: 50px; height: 50px; border-radius: 50%; background: var(--paper); border: 3px solid var(--ink); pointer-events: none; }
+  .tc-btn { width: 84px; height: 84px; border-radius: 50%; border: 4px solid var(--ink); font: 24px var(--font-cap); letter-spacing: .06em; color: var(--ink); box-shadow: 0 4px 0 #000; }
+  .tc-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #000; }
+  .tc-btn:focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; }
+  #tc-punch { right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(70px + env(safe-area-inset-bottom, 0px)); background: #c9442c; color: var(--paper); }
+  #tc-jump { right: calc(max(18px, env(safe-area-inset-right, 0px)) + 96px); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); background: var(--accent); }
+  #tc-pause { right: max(18px, env(safe-area-inset-right, 0px)); top: calc(10px + env(safe-area-inset-top, 0px)); width: 52px; height: 40px; border-radius: 6px; background: var(--paper); font-size: 17px; box-shadow: 0 3px 0 #000; }
+  @media (pointer: coarse) { #keys { display: none; } }
+</style>
+<div id="stage"><canvas id="game" width="1280" height="720" aria-label="Bent Harbor, a dockside beat-'em-up. Keyboard: A and D move, Space jumps, J punches."></canvas></div>
+<p id="keys"><b>A D</b> move &nbsp;·&nbsp; <b>SPACE</b> jump &nbsp;·&nbsp; <b>J</b> punch (hold to wind up, <b>↑ ↓</b> to aim) &nbsp;·&nbsp; <b>ESC</b> pause &nbsp;·&nbsp; <b>M</b> mute &nbsp;·&nbsp; gamepad supported</p>
+<div id="touch" hidden>
+  <div id="tc-stick"><div id="tc-nub"></div></div>
+  <button class="tc-btn" id="tc-jump" type="button">JUMP</button>
+  <button class="tc-btn" id="tc-punch" type="button">SOCK</button>
+  <button class="tc-btn" id="tc-pause" type="button">II</button>
+</div>
+<script>
+/*SCRIPT*/
+</script>

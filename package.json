@@ -1,0 +1,11 @@
+{
+  "name": "bent-harbor",
+  "version": "0.1.0",
+  "description": "A physics-based dockside beat-'em-up starring the 1929 Popeye.",
+  "private": true,
+  "main": "desktop/main.js",
+  "scripts": {
+    "build": "node build.js",
+    "desktop": "node build.js && electron ."
+  }
+}
