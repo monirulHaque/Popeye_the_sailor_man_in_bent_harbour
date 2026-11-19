@@ -437,7 +437,7 @@ const STYLE = {
 };
 
 // ───────────────────────────── Popeye: a dedicated, clean-line drawing (no misregistered fills)
-const PC = { skin: '#f2c194', skinDk: '#d99a6c', shirt: '#1f2c3d', collar: '#f4ead2', stripe: '#2f4f86', pants: '#3a6a96', pantsDk: '#2c5378', shoe: '#3b2414', cap: '#fbf6e4', band: '#1f2c3d', pipe: '#e2a52c', stem: '#7a5230' };
+const PC = { skin: '#f2c194', skinDk: '#d99a6c', shirt: '#fbf8ee', shirtDk: '#ddd6c2', collar: '#fbf8ee', stripe: '#2f4f86', pants: '#f6f1e2', pantsDk: '#d8d0ba', shoe: '#1d1a16', cap: '#fbf8ee', band: '#e9e2cf', pipe: '#e2a52c', stem: '#7a5230', tie: '#1d1a16' };
 function pInk(path, fill, lw) { if (fill) { X.fillStyle = fill; X.fill(path); } if (lw) { X.lineWidth = lw; X.strokeStyle = C.ink; X.lineJoin = 'round'; X.lineCap = 'round'; X.stroke(path); } }
 function pLine(pts, lw, col) { X.lineWidth = lw; X.strokeStyle = col || C.ink; X.lineCap = 'round'; X.lineJoin = 'round'; const q = new Path2D(); pts.forEach((v, i) => (i ? q.lineTo(v[0], v[1]) : q.moveTo(v[0], v[1]))); X.stroke(q); }
 function popeyeArm(sx, sy, hx, hy, fs, bend, front) {
@@ -445,9 +445,9 @@ function popeyeArm(sx, sy, hx, hy, fs, bend, front) {
   const ex = sx + dx * 0.4 - uy * bend, ey = sy + dy * 0.4 + ux * bend;           // elbow
   // skinny upper arm with a short sleeve
   pLine([[sx, sy], [ex, ey]], 6.4, C.ink); pLine([[sx, sy], [ex, ey]], 3.4, front ? PC.skin : PC.skinDk);
-  pLine([[sx, sy], [lerp(sx, ex, 0.35), lerp(sy, ey, 0.35)]], 6.4, C.ink); pLine([[sx, sy], [lerp(sx, ex, 0.32), lerp(sy, ey, 0.32)]], 3.6, PC.shirt);
+  pLine([[sx, sy], [lerp(sx, ex, 0.38), lerp(sy, ey, 0.38)]], 7.4, C.ink); pLine([[sx, sy], [lerp(sx, ex, 0.35), lerp(sy, ey, 0.35)]], 4.6, front ? PC.shirt : PC.shirtDk);
   // the forearm: a great ham of a thing, widest just short of the wrist
-  const fx = hx - ex, fy = hy - ey, fl = hypot(fx, fy) || 1, a = Math.atan2(fy, fx), w = 6.8 * (1 + (fs - 1) * 0.55);
+  const fx = hx - ex, fy = hy - ey, fl = hypot(fx, fy) || 1, a = Math.atan2(fy, fx), w = 8 * (1 + (fs - 1) * 0.55);
   X.save(); X.translate(ex, ey); X.rotate(a);
   const fa = new Path2D(); fa.moveTo(0, -2.6); fa.bezierCurveTo(fl * 0.3, -w * 0.9, fl * 0.62, -w * 1.25, fl * 0.86, -w * 0.8); fa.lineTo(fl * 0.86, w * 0.8);
   fa.bezierCurveTo(fl * 0.62, w * 1.25, fl * 0.3, w * 0.9, 0, 2.6); fa.closePath();
@@ -458,14 +458,15 @@ function popeyeArm(sx, sy, hx, hy, fs, bend, front) {
   }
   X.restore();
   // fist
-  const r = 5.6 * fs, fist = new Path2D(); fist.ellipse(hx, hy, r * 1.05, r, a, 0, TAU);
+  const r = 6 * fs, fist = new Path2D(); fist.ellipse(hx, hy, r * 1.05, r, a, 0, TAU);
   pInk(fist, front ? PC.skin : PC.skinDk, 2.2);
   X.lineWidth = 1; X.strokeStyle = C.ink; X.beginPath();
   for (let i = -1; i <= 1; i++) { const ox = -uy * i * r * 0.42, oy = ux * i * r * 0.42; X.moveTo(hx + ux * r * 0.25 + ox, hy + uy * r * 0.25 + oy); X.lineTo(hx + ux * r * 0.85 + ox, hy + uy * r * 0.85 + oy); }
   X.stroke();
 }
 function popeyeLeg(hx, hy, f, col) {
-  pLine([[hx, hy], [f[0], f[1] - 4]], 7.2, C.ink); pLine([[hx, hy], [f[0], f[1] - 4]], 4.2, col);
+  pLine([[hx, hy], [f[0], f[1] - 4]], 8.6, C.ink); pLine([[hx, hy], [f[0], f[1] - 4]], 5.6, col);
+  const cuff = new Path2D(); cuff.moveTo(f[0] - 5.4, f[1] - 3.6); cuff.lineTo(f[0] + 5.4, f[1] - 3.6); cuff.lineTo(f[0] + 4, f[1] - 9); cuff.lineTo(f[0] - 4, f[1] - 9); cuff.closePath(); pInk(cuff, col, 1.8);
   const shoe = new Path2D(); shoe.moveTo(f[0] - 6, f[1]); shoe.bezierCurveTo(f[0] - 7, f[1] - 9, f[0] + 9, f[1] - 10, f[0] + 13, f[1] - 3); shoe.quadraticCurveTo(f[0] + 14, f[1] + 0.5, f[0] + 9, f[1] + 0.5); shoe.closePath();
   pInk(shoe, PC.shoe, 2.2); X.fillStyle = 'rgba(255,255,255,.25)'; X.beginPath(); X.ellipse(f[0] + 4, f[1] - 6, 3, 1.4, -0.2, 0, TAU); X.fill();
 }
@@ -531,25 +532,29 @@ function popeyeHead(expr, p) {
   X.restore();
 }
 function drawPopeye(p, t) {
-  const lean = p.lean || 0, hipX = lean * 10, hipY = -21 + (p.bob || 0), tl = 22;
+  const lean = p.lean || 0, hipX = lean * 10, hipY = -23 + (p.bob || 0), tl = 24;
+  const lf = [p.lf[0] * 1.25 - 1, p.lf[1]], rf = [p.rf[0] * 1.25 + 1, p.rf[1]];
   const shX = hipX + sin(lean) * tl, shY = hipY - cos(lean) * tl;
   // back arm, legs
-  popeyeArm(shX - 8, shY + 5, p.lh[0], p.lh[1], p.fistL || 1, p.bendL === undefined ? -7 : p.bendL, false);
-  popeyeLeg(hipX - 4.5, hipY, p.lf, PC.pantsDk);
-  popeyeLeg(hipX + 4.5, hipY, p.rf, PC.pants);
+  popeyeArm(shX - 10, shY + 5, p.lh[0], p.lh[1], p.fistL || 1, p.bendL === undefined ? -7 : p.bendL, false);
+  popeyeLeg(hipX - 5.5, hipY, lf, PC.pantsDk);
+  popeyeLeg(hipX + 5.5, hipY, rf, PC.pants);
   // torso: barrel chest in a dark jumper
   X.save(); X.translate(hipX, hipY); X.rotate(lean);
-  const pants = new Path2D(); pants.moveTo(-9.4, -4); pants.lineTo(9.4, -4); pants.lineTo(8.6, 3); pants.quadraticCurveTo(0, 5.4, -8.6, 3); pants.closePath(); pInk(pants, PC.pants, 2.2);
-  const body = new Path2D(); body.moveTo(-8.6, 0); body.bezierCurveTo(-13.6, -7, -15.4, -18, -11.4, -23.6); body.lineTo(11.6, -23.6); body.bezierCurveTo(15.6, -18, 13.8, -7, 8.6, 0); body.closePath();
+  const pants = new Path2D(); pants.moveTo(-10.4, -4); pants.lineTo(10.4, -4); pants.lineTo(9.6, 3); pants.quadraticCurveTo(0, 5.4, -9.6, 3); pants.closePath(); pInk(pants, PC.pants, 2.2);
+  const body = new Path2D(); body.moveTo(-9.4, 0); body.bezierCurveTo(-15.6, -8, -18, -20, -14.2, -25.6); body.lineTo(14.4, -25.6); body.bezierCurveTo(18.2, -20, 15.8, -8, 9.4, 0); body.closePath();
   pInk(body, PC.shirt, 2.4);
+  X.save(); X.clip(body); X.fillStyle = PC.shirtDk; X.beginPath(); X.ellipse(-12, -10, 6, 16, 0.1, 0, TAU); X.fill(); X.restore(); X.lineWidth = 2.4; X.strokeStyle = C.ink; X.stroke(body);
+  X.lineWidth = 1.2; X.beginPath(); X.moveTo(-9.6, -1.6); X.lineTo(9.6, -1.6); X.stroke();   // waistband
   // sailor collar with a stripe
-  const col = new Path2D(); col.moveTo(-12, -23.6); col.lineTo(-13.6, -15.6); col.lineTo(-3.6, -17.4); col.lineTo(0.6, -10.6); col.lineTo(4.2, -17.6); col.lineTo(13, -16.4); col.lineTo(12, -23.6); col.closePath();
+  const col = new Path2D(); col.moveTo(-14.6, -25.6); col.lineTo(-16, -17); col.lineTo(-4, -19.2); col.lineTo(0.6, -12); col.lineTo(4.6, -19.4); col.lineTo(15.4, -18); col.lineTo(14.6, -25.6); col.closePath();
   pInk(col, PC.collar, 1.8);
-  X.lineWidth = 1.2; X.strokeStyle = PC.stripe; X.beginPath(); X.moveTo(-12, -17.6); X.lineTo(-4.6, -19); X.moveTo(5, -19.2); X.lineTo(11.6, -18.2); X.stroke();
-  X.fillStyle = PC.pipe; [[2.2, -7.6], [2.6, -3.2]].forEach(([x, y]) => { X.beginPath(); X.arc(x, y, 1.5, 0, TAU); X.fill(); X.lineWidth = 0.8; X.strokeStyle = C.ink; X.stroke(); });
+  X.lineWidth = 1.2; X.strokeStyle = PC.stripe; X.beginPath(); X.moveTo(-14.6, -19.2); X.lineTo(-5.4, -21); X.moveTo(5.6, -21.2); X.lineTo(14, -20); X.stroke();
+  const knot = new Path2D(); knot.moveTo(-2.2, -14.6); knot.lineTo(3.4, -14.6); knot.lineTo(2.6, -11.4); knot.lineTo(-1.4, -11.4); knot.closePath(); pInk(knot, PC.tie, 1);
+  pInk(poly([[-1.4, -11.6], [-3.6, -5.6], [-0.6, -6.6]]), PC.tie, 1); pInk(poly([[2.6, -11.6], [4.8, -5.8], [1.8, -6.6]]), PC.tie, 1);
   X.restore();
   // head
-  X.save(); X.translate(shX + 2 + lean * 4, shY - 1); X.rotate(p.tilt || 0); popeyeHead(p.expr || '', p); X.restore();
+  X.save(); X.translate(shX + 2 + lean * 4, shY - 0.5); X.rotate(p.tilt || 0); X.scale(0.86, 0.86); popeyeHead(p.expr || '', p); X.restore();
   // front arm
-  popeyeArm(shX + 8, shY + 5, p.rh[0], p.rh[1], p.fistR || 1, p.bendR === undefined ? 7 : p.bendR, true);
+  popeyeArm(shX + 10, shY + 5, p.rh[0], p.rh[1], p.fistR || 1, p.bendR === undefined ? 7 : p.bendR, true);
 }
