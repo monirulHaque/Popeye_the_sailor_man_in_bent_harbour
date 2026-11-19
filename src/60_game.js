@@ -55,6 +55,7 @@ Object.assign(G, {
     if (e.hp <= 0 && e.state !== 'ko') e.ko();
   },
   onKO(e) {
+    if (e.kind === 'sindbad') { this.sindGone(e, false); FX.say(e, 'CURSES! I SHALL RETURN FOR HER!', 1.8); this.say('SEE YOU, SINDBAD!', 1.4, 70); }
     if (this.olive) this.olive.cheer();
     this.stats.kos++; const amt = e.cfg.pay * this.mult; this.add(amt, 'ko'); this.chainUp(); this.feed('strike'); Sfx.ko(); this.popup(amt, e.b.x, e.b.y - 30);
     if (e.bounces >= 3) FX.stamp('GRAND TOUR!', e.b.x, e.b.y - 80, 44, C.teal, { burst: C.cream, life: 1.1 });
@@ -111,6 +112,7 @@ Object.assign(G, {
     this.tip(e.kind === 'plank' ? 'plank' : 'block', e.kind === 'plank' ? 'HE’S HIDING BEHIND THAT PLANK: UPPERCUT (↑ + ' + this.keyName('punch') + '), DIVE-BOMB, OR HIT HIM FROM BEHIND. HAYMAKERS SPLIT IT.' : 'HE BLOCKED YOUR JAB. WIND UP A HAYMAKER, UPPERCUT, OR GET ROUND THE BACK OF HIM.', 7);
   },
   kidnapped(e, ol) {
+    if (e.kind === 'sindbad') { this.sindGone(e, true); FX.stamp('SINDBAD SAILS OFF WITH HER!', clamp(e.b.x, this.cam.x + 240, this.cam.x + W - 240), 230, 40, C.teal, { life: 1.8 }); }
     const P = this.player; e.remove(); ol.lose(); this.splash(e.b.x, 1);
     FX.stamp('SHANGHAIED!', clamp(e.b.x, this.cam.x + 180, this.cam.x + W - 180), 300, 64, C.red, { burst: C.cream, life: 1.6 });
     this.breakChain(); this.meter = Math.max(0, this.meter - 0.35); this.hurtFlash = 0.3; Sfx.hurt(); this.shake(10);
@@ -136,6 +138,7 @@ Object.assign(G, {
     Object.assign(this, { score: 0, cats: {}, chain: 0, chainT: 0, bestChain: 0, mult: 1, meter: i ? 0.35 : 0, canOut: false, gullT: 0, gull: null, waveIdx: -1, queue: [], waveClock: 0, between: 1.6, cleared: false, clearT: 0, overT: 0, time: 0, hint: null, hintQ: [], banner: null, hitstopT: 0, slowT: 0, shakeAmt: 0, zoom: 1, hurtFlash: 0 });
     this.stats = { kos: 0, dunks: 0, bends: 0 };
     this.olive = this.stage.olive ? new Olive(this.stage.olive.x, this.stage.olive.y, this.stage.olive) : null;
+    this.sind = { n: 0, t: i === 0 ? 30 : i === 1 ? 16 : 20, on: false, max: [1, 2, 3][this.diffIdx === undefined ? 1 : this.diffIdx] };
     this.cam.x = clamp(this.player.b.x - W / 2, 0, this.stage.width - W);
     this.mode = !retry && STORIES[i] ? 'story' : 'card'; this.cardT = 0; this.storyIdx = 0; this.storyT = 0; this.panelT = 0; Sfx.stop();
     if (this.mode === 'story') Sfx.play('liverpool', { drums: false, calm: true });
@@ -147,6 +150,7 @@ Object.assign(G, {
     if (this.stage.id === 2) this.tip('boss', 'BANK TOUGHS AND BARRELS UP INTO THE CAB — OR EAT YOUR SPINACH AND UPPERCUT THE WRECKING BALL HOME', 9);
   },
   playerDown() { this.slow(0.25, 1.4); this.overT = 1.9; this.say('KNOCKED FLAT!', 1.8, 90); Sfx.spinach(false); Sfx.stop(); Sfx.ko(); },
+  sindGone(e, took) { if (!this.sind) return; this.sind.on = false; this.sind.t = took ? 22 : 26; if (!took) { this.add(400 * this.mult, 'ko'); this.popup(400 * this.mult, e.b.x, e.b.y - 60); } },
   bossDown() { if (this.olive) this.olive.free_(); this.stageClear(); },
   stageClear() {
     if (this.cleared) return; this.cleared = true; this.clearT = 2.6; this.say(this.stage.boss ? 'HARBOR’S YOURS!' : 'STRIP CLEARED!', 2.4, 92); this.slow(0.4, 0.8);
@@ -254,6 +258,17 @@ Object.assign(G, {
         if (alive < 6) this.waveClock += d;
         while (this.queue.length && this.queue[0][0] <= this.waveClock) { const q = this.queue.shift(); this.spawn(q[1], q[2], q[3]); }
         if (!st.boss && !this.queue.length && alive === 0) { if (this.waveIdx + 1 < st.waves.length) this.between = 1.7; else this.stageClear(); }
+      }
+    }
+    // Sindbad the Sailor turns up, again and again, for Olive
+    const sd = this.sind;
+    if (sd && this.olive && !sd.on && sd.n < sd.max && !this.cleared && !P.dead && this.waveIdx >= 0) {
+      sd.t -= d;
+      if (sd.t <= 0) {
+        const key = st.spawns.boat ? 'boat' : 'boatR', e = this.spawn('sindbad', key, 'grab'); sd.on = true; sd.n++;
+        this.say(sd.n === 1 ? 'SINDBAD THE SAILOR!' : 'SINDBAD’S BACK!', 1.6, 72); Sfx.toot();
+        this.tip('sindbad', 'SINDBAD ONLY WANTS OLIVE. JABS WON’T STOP HIM AND HE DODGES WIND-UPS: QUICK HAYMAKERS, UPPERCUTS, DIVE-BOMBS AND SPINACH DO.', 9);
+        FX.say(e, pick(e.cfg.cry), 1.6);
       }
     }
     // spinach service

@@ -385,6 +385,37 @@ const STYLE = {
       line([[-13, -8], [13, -9.4]], 3.6);
     },
   },
+  sindbad: {
+    shirt: '#d9a272', sleeve: '#d9a272', sleeveDk: '#c08a5c', pants: '#f2e6c4', pantsDk: '#d8c99e', skin: '#d9a272', shoe: C.mustard,
+    legW: 8, armW: 4.4, torsoW: 12, fist: 6, hip: 25, torsoL: 25, neck: 12,
+    deco(hx, hy, sx, sy) {
+      X.fillStyle = C.teal; X.fillRect(hx - 22, sy - 10, 12, hy - sy + 12); X.fillRect(hx + 8, sy - 10, 14, hy - sy + 12);   // open vest
+      X.fillStyle = C.mustard; X.fillRect(hx - 11, sy - 10, 2, hy - sy + 12); X.fillRect(hx + 7, sy - 10, 2, hy - sy + 12);
+      X.fillStyle = C.red; X.fillRect(hx - 22, hy - 9, 44, 9);                                                                  // sash
+      X.strokeStyle = C.ink; X.lineWidth = 1.4; X.beginPath(); X.moveTo(hx - 22, hy - 9); X.lineTo(hx + 22, hy - 9); X.stroke();
+    },
+    head(expr) {
+      ink(circ(-8, 1, 3), '#c08a5c', 2); ink(circ(-8.4, 5.6, 2), null, 1.4);                                   // ear and gold hoop
+      X.strokeStyle = C.mustard; X.lineWidth = 1.4; X.beginPath(); X.arc(-8.4, 5.6, 2, 0, TAU); X.stroke();
+      ink(ell(1, 1, 9, 10.5), '#d9a272', 2.5);
+      ink(ell(9, 0, 3.2, 3.6, 0.3), '#d9a272', 2.1);                                                            // hooked nose
+      if (expr === 'ko' || expr === 'ow' || expr === 'dizzy') { eyeX(3.6, -3, 2); ink(ell(5, 7, 2.2, 2.8), C.ink, 0); }
+      else {
+        X.fillStyle = C.ink; X.beginPath(); X.arc(4, -3, 1.5, 0, TAU); X.fill();
+        line([[0.5, -6.6], [7, expr === 'mad' ? -4.4 : -6.8]], 2);
+        X.lineWidth = 1.7; X.strokeStyle = C.ink; X.beginPath(); X.moveTo(2, 6.4); X.quadraticCurveTo(6, expr === 'grin' ? 10 : 8, 10, 6); X.stroke();
+        if (expr === 'grin') { X.fillStyle = C.mustard; X.fillRect(5, 7, 2.4, 2); }                             // gold tooth
+      }
+      // waxed moustache, curled at both ends
+      X.lineWidth = 2.2; X.strokeStyle = C.ink; X.beginPath(); X.moveTo(9, 3.6); X.quadraticCurveTo(4, 2, 0, 5); X.quadraticCurveTo(-3, 7, -2, 3.6);
+      X.moveTo(9, 3.6); X.quadraticCurveTo(14, 2.4, 16, 5.4); X.quadraticCurveTo(16.6, 8, 14.4, 7); X.stroke();
+      // turban, jewel, feather
+      const tb = new Path2D(); tb.moveTo(-10, -4); tb.bezierCurveTo(-13, -22, 12, -24, 10.5, -5); tb.quadraticCurveTo(0, -9, -10, -4); tb.closePath();
+      ink(tb, C.white, 2.3); X.lineWidth = 1.2; X.strokeStyle = C.ink; X.beginPath(); X.moveTo(-9, -9); X.quadraticCurveTo(0, -15, 9.6, -9); X.moveTo(-8, -14); X.quadraticCurveTo(0, -19, 8, -14); X.stroke();
+      ink(circ(4, -9, 2.4), C.red, 1.4);
+      const fe = new Path2D(); fe.moveTo(4, -11); fe.quadraticCurveTo(0, -26, 9, -32); fe.quadraticCurveTo(10, -22, 5, -11); fe.closePath(); ink(fe, C.green, 1.6);
+    },
+  },
   plank: {
     shirt: C.mustard, sleeve: C.mustard, sleeveDk: '#bb8520', pants: C.navy, pantsDk: '#1f344a', skin: '#e7b48c', shoe: C.ink,
     legW: 6, armW: 5, torsoW: 12, fist: 6.2, hip: 23, torsoL: 24,
