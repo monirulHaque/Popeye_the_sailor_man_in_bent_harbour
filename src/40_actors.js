@@ -208,7 +208,7 @@ class Player {
     if (this.super) { X.save(); X.globalAlpha = 0.5 + 0.3 * sin(this.t * 22); ink(starPath(0, -36, 58 + sin(this.t * 30) * 4, 12, 0.72, this.t * 2), C.greenLt, 0, false); X.restore(); }
     if (p.wind) { X.strokeStyle = C.ink; X.lineWidth = 2; for (let i = 1; i <= 3; i++) { X.beginPath(); X.arc(p.wind.x, p.wind.y, p.wind.r + i * 4, p.wind.a - 0.5 - i * 0.7, p.wind.a - i * 0.7 + 0.4); X.stroke(); } }
     if (p.smear) { X.strokeStyle = C.ink; X.lineWidth = 2.4; X.lineCap = 'round'; for (let i = -1; i <= 1; i++) { const ox = -p.smear.ay * i * 7, oy = p.smear.ax * i * 7; X.beginPath(); X.moveTo(p.smear.x - p.smear.ax * 18 + ox, p.smear.y - p.smear.ay * 18 + oy); X.lineTo(p.smear.x - p.smear.ax * (34 + (i ? 0 : 12)) + ox, p.smear.y - p.smear.ay * (34 + (i ? 0 : 12)) + oy); X.stroke(); } }
-    rig(STYLE.popeye, p, this.t);
+    drawPopeye(p, this.t);
     X.restore();
   }
 }

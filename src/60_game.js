@@ -394,7 +394,7 @@ Object.assign(G, {
     // the man himself
     X.save(); X.translate(1050, 569); X.scale(3.1, 3.1);
     const k = 0.5 + 0.5 * sin(t * 2.2);
-    rig(STYLE.popeye, { lean: 0.02, bob: sin(t * 2.2) * 0.8, expr: 'flex', lf: [-10, 0], rf: [10, 0], lh: [-34, -48 - k * 5], rh: [34, -50 - k * 5], fistL: 1.5 + k * 0.2, fistR: 1.5 + k * 0.2, bendL: -15, bendR: 15, puff: (t * 0.5) % 1 }, t);
+    drawPopeye({ lean: 0.02, bob: sin(t * 2.2) * 0.8, expr: 'flex', lf: [-10, 0], rf: [10, 0], lh: [-34, -48 - k * 5], rh: [34, -50 - k * 5], fistL: 1.5 + k * 0.2, fistR: 1.5 + k * 0.2, bendL: -15, bendR: 15, puff: (t * 0.5) % 1 }, t);
     X.restore(); drawCan(880, 596, 1.7);
     if (this.mode === 'title') {
       const items = this.titleItems();
@@ -468,7 +468,7 @@ Object.assign(G, {
     caption(W / 2, 380, 'TOTAL DAMAGES, ALL STRIPS:  ' + money(this.total), 34, C.mustard, 'center');
     caption(W / 2, 446, (this.newBest ? 'A NEW RECORD  ·  ' : '') + 'RANK: ' + rankOf(this.total / 2.4), 26, C.cream, 'center');
     X.save(); X.translate(W / 2 - 40, 668); X.scale(1.75, 1.75); const k = 0.5 + 0.5 * sin(this.clock * 3);
-    rig(STYLE.popeye, { lean: 0, bob: 0, expr: 'flex', lf: [-10, 0], rf: [10, 0], lh: [-34, -48 - k * 5], rh: [34, -50 - k * 5], fistL: 1.6, fistR: 1.6, bendL: -15, bendR: 15, puff: (this.clock * 0.6) % 1 }, this.clock); X.restore();
+    drawPopeye({ lean: 0, bob: 0, expr: 'flex', lf: [-10, 0], rf: [10, 0], lh: [-34, -48 - k * 5], rh: [34, -50 - k * 5], fistL: 1.6, fistR: 1.6, bendL: -15, bendR: 15, puff: (this.clock * 0.6) % 1 }, this.clock); X.restore();
     X.save(); X.translate(W / 2 + 120, 668); X.scale(-1.6, 1.6); rig(STYLE.olive, { lean: 0, bob: -abs(sin(this.clock * 6)) * 3, expr: 'cheer', lf: [-5, 0], rf: [5, 0], lh: [-16, -86], rh: [16, -88] }, this.clock); X.restore();
     if (t > 1) label((Input.touch.active ? 'TAP' : 'J / ENTER') + ' — BACK TO THE TITLE', W / 2, H - 40, 22, C.ink, FONT.cap, 'center', 2);
     this.frame(true);
@@ -527,5 +527,5 @@ function boot() {
   if (document.fonts && document.fonts.load) Promise.all(fonts.map((f) => document.fonts.load(f).catch(() => 0))).then(start, start);
   setTimeout(start, 1800);
 }
-window.__bh = { G, World, Input, Sfx, FX, rig: (...a) => rig(...a), STYLE, setX: (c) => { X = c; } };
+window.__bh = { G, World, Input, Sfx, FX, rig: (...a) => rig(...a), drawPopeye: (...a) => drawPopeye(...a), STYLE, setX: (c) => { X = c; } };
 if (document.readyState === 'loading') addEventListener('DOMContentLoaded', boot); else boot();
