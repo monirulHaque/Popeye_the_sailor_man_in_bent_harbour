@@ -11,8 +11,9 @@ border takes a knock. Every dent stays for the rest of the strip and goes on the
 - **Olive Oyl** (1919 strip). She throws Popeye his spinach. Toughs marked with a yellow “!” try to carry her
   off the edge of the panel; one punch makes them drop her. In the last strip she is held in a cargo net.
 - **Sindbad the Sailor** (the Arabian Nights rogue, in an original design) sails in during every strip with one aim:
-  carry Olive off to his ship. He dodges wind-ups, shrugs off jabs, kicks Popeye aside and, in the last strip, cuts
-  Olive's net down. Drive him off and he comes back for her later (once on Deckhand, twice on Sailor, three times on Old Salt).
+  carry Olive off to his ship. He dodges wind-ups and answers with a flying kick, shrugs off jabs, spin-kicks Popeye
+  when crowded, throws daggers (punch one back at him), runs off with Olive at full speed and, in the last strip,
+  cuts her net down. Craters and ramps don't stop him: he leaps them. Drive him off and he comes back for her later (once on Deckhand, twice on Sailor, three times on Old Salt).
 - Original waterfront toughs: rats (jab, combo, lunge, block jabs), bruisers (charge, ground pound),
   bottle-chuckers, and plank men who block frontal punches (uppercut, dive-bomb, hit from behind, or split
   the plank with haymakers). Boss: Big Barnacle Bragg and his wrecking-ball crane.

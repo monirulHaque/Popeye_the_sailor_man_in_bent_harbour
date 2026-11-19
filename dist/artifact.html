@@ -748,6 +748,13 @@ const World = {
     }
     return hit;
   },
+  surfaceAt(x, y0, y1) {
+    let s = y0;
+    for (let k = 0; k < 4; k++) {
+      if (this.shapes.some((sh) => sh.closed && !sh.ghost && x > sh.minx && x < sh.maxx && s > sh.miny && s < sh.maxy && sh.contains(x, s))) s -= 70; else break;
+    }
+    const h = this.raycast(x, s, x, y1); return h ? h.y : null;
+  },
   groundBelow(x, y, max) { const h = this.raycast(x, y, x, y + (max || 400)); return h ? h.y : null; },
 };
 
@@ -1425,7 +1432,7 @@ const FOES = {
   bruiser: { r: 36, m: 2.6, hp: 78, speed: 100, s: 1.62, pay: 250, heavy: true, cry: ['OUTTA MY WAY!', 'I’LL FLATTEN YA!'] },
   chucker: { r: 22, m: 0.85, hp: 22, speed: 140, s: 1.12, pay: 120, cry: ['HEADS UP!', 'CATCH!'] },
   plank: { r: 27, m: 1.5, hp: 44, speed: 112, s: 1.26, pay: 180, cry: ['TRY GETTIN’ PAST THIS!', 'KNOCK KNOCK!'] },
-  sindbad: { r: 29, m: 1.4, hp: 95, speed: 205, s: 1.42, pay: 600, cry: ['SINDBAD HAS COME FOR HIS BRIDE!', 'STAND ASIDE, LITTLE SAILOR!'] },
+  sindbad: { r: 29, m: 1.4, hp: 120, speed: 235, s: 1.42, pay: 600, cry: ['SINDBAD HAS COME FOR HIS BRIDE!', 'STAND ASIDE, LITTLE SAILOR!'] },
 };
 const MELEE = { rat: 1, bruiser: 1, plank: 1, sindbad: 1 };
 class Enemy {
@@ -1439,7 +1446,7 @@ class Enemy {
     this.hp = this.cfg.hp; this.dmg = 0; this.state = 'spawn'; this.t = 0; this.face = x < G.player.x ? 1 : -1; this.cd = rand(0.3, 0.9) * D().cd;
     this.super = false; this.bounces = 0; this.lastRic = -1; this.restT = 0; this.stuck = 0; this.walk = rand(6); this.sq = 0;
     this.perch = !!o.perch; this.gone = false; this.age = 0; this.flinch = 0; this.didHit = false;
-    this.role = o.role || ''; this.token = false; this.move = ''; this.feint = rand(TAU); this.shield = kind === 'plank' ? 3 : 0; this.combo = 0;
+    this.role = o.role || ''; this.stuckN = 0; this.throwT = 2; this.token = false; this.move = ''; this.feint = rand(TAU); this.shield = kind === 'plank' ? 3 : 0; this.combo = 0;
   }
   get hittable() { return !this.gone && !this.hidden && this.state !== 'ko' && this.state !== 'getup' && !(this.state === 'spawn' && this.b.ghost); }
   get live() { return this.state === 'fly' || this.state === 'ko'; }
@@ -1452,15 +1459,42 @@ class Enemy {
     this.token = true; return true;
   }
   begin(move, dur) { this.state = 'wind'; this.move = move; this.t = 0; this.dur = dur; }
+  // walking that copes with the harbor after Popeye has bent it: hop up ramps and lips,
+  // walk down into craters and climb out, leap holes and gaps when there is somewhere to land
   steer(dir, speed, dt) {
-    const b = this.b;
-    if (dir && this.descend === undefined && !this.groundAhead(dir)) {
-      if (b.grounded && this.groundAhead(dir, 150) && sign(G.player.b.x - b.x) === dir) { b.vy = -620; b.vx = dir * 330; b.grounded = false; b.y -= 2; }
-      else if (b.grounded) dir = 0;
+    const b = this.b, feet = b.y + b.r, wet = World.waterY - 10;
+    const leap = this.kind === 'sindbad' ? 360 : this.kind === 'bruiser' ? 160 : 220;
+    this.navT = (this.navT || 0) - dt;
+    if (dir && b.grounded && this.navT <= 0 && this.descend === undefined) {
+      const ahead = World.surfaceAt(b.x + dir * (b.r + 16), feet - 120, feet + 280);
+      if (ahead === null || ahead > wet) {
+        let land = null;
+        for (let d = 70; d <= leap; d += 20) { const y = World.surfaceAt(b.x + dir * d, feet - 170, feet + 280); if (y !== null && y < wet) { land = { d: d + b.r * 0.7, y }; break; } }
+        if (land) { this.jumpTo(dir, land.d, land.y - feet); return; }
+        dir = 0;
+      } else if (ahead < feet - 16) {
+        const rise = feet - ahead;
+        b.vy = -Math.min(1050, Math.sqrt(2 * World.g * (rise + 36))); b.vx = dir * Math.max(speed, 200); b.y -= 2; b.grounded = false; this.navT = 0.3;
+        return;
+      }
     }
     if (b.grounded || b.touch) b.vx = approach(b.vx, dir * speed, 1500 * dt);
-    if (dir && abs(b.vx) < 24 && b.grounded) { this.stuck += dt; if (this.stuck > 0.3) { b.vy = -640; b.y -= 2; this.stuck = 0; } } else this.stuck = 0;
+    // judge "stuck" by real progress, not speed: a barrel or a body in the way makes speed jitter
+    if (dir && b.grounded) {
+      this.stuck += dt;
+      if (this.stuck > 0.45) {
+        if (abs(b.x - (this.lastX === undefined ? b.x + 99 : this.lastX)) < 12) { this.jumpTo(dir, 130 + this.stuckN * 40, -20 - this.stuckN * 30); this.stuckN = Math.min(4, this.stuckN + 1); }
+        else this.stuckN = 0;
+        this.stuck = 0; this.lastX = b.x;
+      }
+    } else if (!dir) { this.stuck = 0; this.lastX = undefined; }
     if (abs(b.vx) > 20) this.walk += abs(b.vx) * dt * 0.06;
+  }
+  jumpTo(dir, dist, dh) {
+    const b = this.b, g = World.g; let vy = this.kind === 'sindbad' ? -780 : -660;
+    if (-dh > (vy * vy) / (2 * g) - 30) vy = -Math.sqrt(2 * g * (-dh + 60));
+    const disc = vy * vy + 2 * g * dh, t = disc > 0 ? (-vy + Math.sqrt(disc)) / g : 0.8;
+    b.vy = vy; b.vx = dir * clamp(dist / Math.max(0.25, t), 160, 760); b.y -= 2; b.grounded = false; this.navT = 0.35;
   }
   update(dt) {
     const b = this.b, P = G.player, c = this.cfg, Dd = D(); this.t += dt; this.age += dt; this.sq = Math.max(0, this.sq - dt * 5); this.flinch = Math.max(0, this.flinch - dt);
@@ -1526,12 +1560,19 @@ class Enemy {
       case 'carry': {
         const ol = this.carrying; if (!ol || ol.carrier !== this) { this.state = 'walk'; this.role = ''; break; }
         const ex = this.exitX - b.x; this.face = sign(ex) || 1;
-        this.steer(abs(ex) > 12 ? this.face : 0, c.speed * 0.78, dt);
+        this.steer(abs(ex) > 12 ? this.face : 0, c.speed * (this.kind === 'sindbad' ? 0.95 : 0.78), dt);
+        if (this.kind === 'sindbad') {
+          this.throwT -= dt * Dd.aggro;
+          if (this.throwT <= 0 && sign(dx) === -this.face && adx > 90 && adx < 560) { this.throwT = rand(1.1, 1.7); G.throwDagger(this); if (Math.random() < 0.4) FX.say(this, pick(['A GIFT FROM SINDBAD!', 'BACK, SAILOR!']), 0.9); }
+        }
         if (abs(ex) < 18) G.kidnapped(this, ol);
         break;
       }
       case 'flip':
-        if (this.t > 0.25 && b.grounded) { this.state = 'walk'; this.t = 0; }
+        if (this.t > 0.25 && b.grounded) {
+          this.state = 'walk'; this.t = 0;
+          if (adx > 90 && adx < 340 && abs(dy) < 90 && Math.random() < 0.75 * Dd.aggro) { this.face = sign(dx) || 1; this.token = true; this.begin('flykick', 0.16); }
+        }
         break;
       case 'cut': {
         const ol = G.olive; b.vx = approach(b.vx, 0, 1600 * dt); this.face = ol && ol.b.x > b.x ? 1 : -1;
@@ -1553,13 +1594,26 @@ class Enemy {
           else if (this.move === 'lunge') { b.vx = this.face * 560; b.vy = -380; b.y -= 2; b.grounded = false; Sfx.whoosh(0.9); }
           else if (this.move === 'charge') { b.vx = this.face * 600; Sfx.whoosh(1.2); }
           else if (this.move === 'pound') { this.poundHit(); }
-          else if (this.move === 'kick') {
+          else if (this.move === 'flykick') {
+          if (!this.didHit && hypot(b.x + this.face * 20 - P.b.x, b.y - P.b.y) < b.r + 34) { this.didHit = true; if (P.hurt(2 + D().heavy, this.face, 820)) { FX.stamp('KA-THWACK!', P.b.x, P.b.y - 70, 44, C.red, { burst: C.cream }); G.shake(10); } }
+          if ((b.grounded && this.t > 0.12) || this.t > 1.2) this.end(0.4, rand(0.6, 1.1));
+        }
+        else if (this.move === 'spin') {
+          b.vx = approach(b.vx, 0, 900 * dt);
+          if (this.t % 0.06 < dt) FX.add({ type: 'ring', x: b.x, y: b.y - 20, size: 30, r1: 100, life: 0.18, color: C.ink, lw: 3 });
+          if (!this.didHit && hypot(b.x - P.b.x, b.y - P.b.y) < 100) { this.didHit = true; if (P.hurt(2 + D().heavy, sign(dx) || 1, 760)) FX.stamp('WHIRL-WHACK!', P.b.x, P.b.y - 70, 40, C.red); }
+          if (this.t > 0.45) this.end(0.45, rand(0.8, 1.3));
+        }
+        else if (this.move === 'kick') {
           if (!this.didHit && hypot(b.x + this.face * 34 - P.b.x, b.y - P.b.y) < 60) { this.didHit = true; if (P.hurt(1 + D().heavy, this.face, 700)) FX.stamp('THWAP!', P.b.x, P.b.y - 70, 40, C.red); }
           b.vx = approach(b.vx, 0, 1200 * dt);
           if (this.t > 0.22) this.end(0.35, rand(0.7, 1.2));
         }
         else if (this.move === 'swing') { Sfx.whoosh(1); }
           else if (this.move === 'kick') { b.vx = this.face * 320; Sfx.whoosh(0.9); }
+          else if (this.move === 'flykick') { b.vx = this.face * 720; b.vy = -400; b.y -= 2; b.grounded = false; Sfx.whoosh(1.2); }
+          else if (this.move === 'spin') { Sfx.whoosh(1.3); }
+          else if (this.move === 'dagger') { G.throwDagger(this); this.end(0.25, rand(0.6, 1)); }
           else { G.throwBottle(this, this.move === 'fan' ? 3 : 1); this.state = 'recover'; this.dur = 0.4; this.cd = rand(1.4, 2.4) * Dd.cd; }
         }
         break;
@@ -1598,7 +1652,7 @@ class Enemy {
         if (sp > 900 && this.t % 0.05 < dt) FX.add({ type: 'spark', x: b.x, y: b.y, vx: -b.vx * 0.2, vy: -b.vy * 0.2, life: 0.18, size: 26, color: C.white });
         this.restT = b.grounded && sp < 120 ? this.restT + dt : 0;
         if (this.state === 'ko') { if (this.restT > 0.35 || this.t > 3.6) { FX.puff(b.x, b.y, 8, 160, 12); FX.stars(b.x, b.y, 4, 220); this.remove(); } }
-        else if (this.restT > 0.2) { this.state = 'down'; this.t = 0; this.dur = rand(0.55, 0.9) / Dd.aggro; this.super = false; b.fric = 0.9; b.rest = 0; b.w = 0; }
+        else if (this.restT > 0.2) { this.state = 'down'; this.t = 0; this.dur = (this.kind === 'sindbad' ? 0.28 : rand(0.55, 0.9)) / Dd.aggro; this.super = false; b.fric = 0.9; b.rest = 0; b.w = 0; }
         break;
       }
       case 'down': if (this.t > this.dur) { this.state = 'getup'; this.t = 0; this.setStand(); b.ang = 0; } break;
@@ -1666,6 +1720,9 @@ class Enemy {
     if (s === 'carry') { p.lh = [-6, -62]; p.rh = [8, -64]; p.lean = 0.25; p.expr = this.kind === 'sindbad' ? 'grin' : 'mad'; }
     else if (s === 'flip') { p.lh = [-16, -40]; p.rh = [14, -42]; p.lf = [-6, -18]; p.rf = [8, -20]; p.expr = 'grin'; }
     else if (s === 'cut') { const k = sin(t * 20); p.rh = [10 + k * 8, -78]; p.lh = [-12, -40]; p.expr = 'grin'; p.lean = -0.1; }
+    else if (this.move === 'flykick' && (s === 'wind' || s === 'attack')) { p.rf = [34, -20]; p.lf = [-10, -12]; p.lean = -0.35; p.lh = [-22, -46]; p.rh = [-10, -50]; p.expr = 'grin'; }
+    else if (this.move === 'spin' && (s === 'wind' || s === 'attack')) { const a = s === 'attack' ? t * 40 : 0; p.rf = [cos(a) * 30, -14 + sin(a) * 6]; p.lh = [-26, -38]; p.rh = [26, -40]; p.lean = s === 'wind' ? -0.25 : 0; p.expr = 'mad'; }
+    else if (this.move === 'dagger' && s === 'wind') { p.rh = [-18, -62]; p.lean = -0.2; p.expr = 'grin'; }
     else if (this.move === 'kick' && (s === 'wind' || s === 'attack')) { const k = s === 'attack' ? 1 : clamp(this.t / this.dur, 0, 1) * 0.3; p.rf = [8 + 30 * k, -6 - 22 * k]; p.lean = -0.3 * k; p.lh = [-20, -40]; p.rh = [-8, -44]; p.expr = 'mad'; }
     else if (s === 'guard') { p.lh = [14, -46]; p.rh = [20, -40]; p.fistL = p.fistR = 1.3; p.lean = -0.12; p.expr = 'mad'; }
     else if (s === 'wind' && this.move === 'lunge') { const k = clamp(this.t / this.dur, 0, 1); p.bob = 10 * k; p.lean = 0.5 * k; p.lh = [-20, -20]; p.rh = [-14, -18]; p.expr = 'mad'; }
@@ -1737,10 +1794,17 @@ Enemy.prototype.sindbadTurn = function (dt, ol, wantOlive, dx, dy, adx) {
     if (abs(ox) < 26 && b.grounded) { this.state = 'cut'; this.t = 0; FX.say(this, 'ALLOW ME, MY DOVE!', 1.2); return true; }
     this.steer(this.face, this.cfg.speed, dt); return true;
   }
-  // the sailor is in the way: boot him aside
+  this.throwT -= dt * Dd.aggro;
+  // the sailor is in the way: boot him aside, spin-kick him if he's crowding, knife him from range
   if (wantOlive) {
-    const toOlive = sign(ol.b.x - b.x);
-    if (sign(dx) === toOlive && adx < 86 && abs(dy) < 70 && this.cd <= 0 && b.grounded) { this.face = toOlive; this.token = true; this.begin('kick', 0.2); return true; }
+    const toOlive = sign(ol.b.x - b.x), between = sign(dx) === toOlive && abs(P.b.x - b.x) < abs(ol.b.x - b.x) + 40;
+    if (abs(ol.b.x - b.x) < 46 && abs(ol.b.y - b.y) < 70 && b.grounded && !this.carrying) { this.state = 'carry'; this.t = 0; this.carrying = ol; ol.grab(this); this.exitX = G.stage.exits.reduce((a, x) => (abs(x - P.b.x) > abs(a - P.b.x) ? x : a)); FX.say(this, pick(['TO MY SHIP, MY DOVE!', 'SINDBAD NEVER LOSES!']), 1.2); Sfx.whistle(); return true; }
+    if (adx < 96 && abs(dy) < 70 && this.cd <= 0 && b.grounded) {
+      this.face = sign(dx) || 1; this.token = true;
+      if (Math.random() < 0.45 * Dd.aggro) { this.begin('spin', 0.3); FX.say(this, 'HAI-YAH!', 0.6); } else this.begin('kick', 0.2);
+      return true;
+    }
+    if (between && adx > 170 && adx < 560 && abs(dy) < 160 && this.throwT <= 0 && b.grounded) { this.throwT = rand(1.4, 2.2); this.face = sign(dx) || 1; this.begin('dagger', 0.24); return true; }
   }
   if (!wantOlive && this.role === 'grab' && Math.random() < dt * 0.5) FX.say(this, pick(['WHERE IS MY DOVE?', 'OLIVE! YOUR SINDBAD IS HERE!']), 1);
   return false;
@@ -1769,7 +1833,8 @@ class Barrel {
   }
 }
 function hotBump(self, o, sp, cx, cy) {
-  if (sp < 280) return; const e = o.owner;
+  // only a prop that is itself flying hurts: running into a hanging hook or a resting barrel does not
+  if (sp < 280 || hypot(self.b.vx, self.b.vy) < 260) return; const e = o.owner;
   if (e instanceof Enemy && !e.live && e.hittable && e.state !== 'spawn') {
     e.takeHit(sp / 36, e.b.vx, e.b.vy - 240 - sp * 0.15, { super: self.super, src: 'prop' });
     G.event('strike', { x: cx, y: cy }); G.punchFx(cx, cy, clamp(sp / 800, 0.6, 1.8), false, true);
@@ -1802,19 +1867,26 @@ class Hook {
   }
 }
 class Bottle {
-  constructor(x, y, vx, vy) {
+  constructor(x, y, vx, vy, o) {
     this.b = World.addBody({ x, y, r: 8, m: 0.3, rest: 0.2, fric: 0.3, cat: CAT.PROJ, mask: 0, vx, vy }); this.b.owner = this; this.b.w = 12; this.back = false; this.gone = false;
+    this.dagger = !!(o && o.dagger); if (this.dagger) { this.b.grav = 0.55; this.b.w = 26; }
     this.b.onHit = () => this.smash();
     this.b.onBump = (o) => { const e = o.owner; if (this.back && e instanceof Enemy && e.hittable) { e.takeHit(14, this.b.vx * 0.5, -420, { src: 'bottle', super: true }); G.event('return', { x: this.b.x, y: this.b.y }); this.smash(); } };
   }
   punch(lx, ly, power, pl) { this.back = true; this.b.vx = lx * 1100; this.b.vy = ly * 1100 - 120; this.b.mask = CAT.ENEMY; this.b.grav = 0.5; FX.stamp('RETURN TO SENDER!', this.b.x, this.b.y - 40, 30, C.teal); Sfx.blip(true); }
-  smash() { if (this.gone) return; this.gone = true; this.b.dead = true; FX.glass(this.b.x, this.b.y); Sfx.glass(); }
+  smash() { if (this.gone) return; this.gone = true; this.b.dead = true; if (this.dagger) { FX.sparks(this.b.x, this.b.y, 0, -1, 5); Sfx.metal(0.4); } else { FX.glass(this.b.x, this.b.y); Sfx.glass(); } }
   update() {
     const b = this.b, P = G.player;
-    if (!this.back && hypot(b.x - P.b.x, b.y - P.b.y) < b.r + P.b.r - 2) { if (P.hurt(1, sign(b.vx || 1), 300)) this.smash(); }
+    if (!this.back && hypot(b.x - P.b.x, b.y - P.b.y) < b.r + P.b.r - 2) { if (P.hurt(this.dagger ? 1 + D().heavy : 1, sign(b.vx || 1), this.dagger ? 460 : 300)) this.smash(); }
     if (b.y > World.waterY + 10 || b.x < G.stage.minX - 100 || b.x > G.stage.maxX + 100) { this.gone = true; b.dead = true; }
   }
-  draw() { drawBottle(this.b.x, this.b.y, this.b.ang); }
+  draw() {
+    if (!this.dagger) { drawBottle(this.b.x, this.b.y, this.b.ang); return; }
+    X.save(); X.translate(this.b.x, this.b.y); X.rotate(this.b.ang);
+    const bl = new Path2D(); bl.moveTo(-2, -3); bl.quadraticCurveTo(10, -8, 16, -1); bl.quadraticCurveTo(9, -2, -2, 2); bl.closePath(); ink(bl, '#dfe6e6', 1.8);
+    ink(rrect(-11, -2.4, 9, 4.8, 1.5), C.red, 1.6); ink(circ(-12, 0, 2.4), C.mustard, 1.2);
+    X.restore();
+  }
 }
 class Can {
   constructor(x, y) { this.b = World.addBody({ x, y, r: 13, m: 0.5, rest: 0.45, fric: 0.6, cat: CAT.PICKUP, mask: 0, vy: 60 }); this.b.noBeam = true; this.gone = false; this.t = 0; this.b.onHit = (h) => { if (h.speed > 150) Sfx.can(); }; }
@@ -2636,6 +2708,12 @@ Object.assign(G, {
     }
     Sfx.whoosh(0.8);
   },
+  throwDagger(e) {
+    const P = this.player, sx = e.b.x + e.face * 8, sy = e.b.y - 48, dx = P.b.x + P.b.vx * 0.15 - sx, dy = P.b.y - 10 - sy;
+    const T = clamp(abs(dx) / 880, 0.2, 0.7), g = World.g * 0.55;
+    this.props.push(new Bottle(sx, sy, dx / T, (dy - 0.5 * g * T * T) / T, { dagger: true })); Sfx.whoosh(1.1);
+    this.tip('dagger', 'SINDBAD THROWS DAGGERS. PUNCH ONE TO SEND IT BACK AT HIM.', 6);
+  },
   blockFx(x, y, e) {
     FX.burst(x, y, 22, C.steel); Sfx.wood(0.8); Sfx.punch(0.4); this.hitstop(0.05); this.shake(4);
     FX.stamp(e.kind === 'plank' ? 'TUNK!' : 'BLOCKED!', x, y - 34, 30, C.steel);
@@ -2680,7 +2758,7 @@ Object.assign(G, {
     if (this.stage.id === 2) this.tip('boss', 'BANK TOUGHS AND BARRELS UP INTO THE CAB — OR EAT YOUR SPINACH AND UPPERCUT THE WRECKING BALL HOME', 9);
   },
   playerDown() { this.slow(0.25, 1.4); this.overT = 1.9; this.say('KNOCKED FLAT!', 1.8, 90); Sfx.spinach(false); Sfx.stop(); Sfx.ko(); },
-  sindGone(e, took) { if (!this.sind) return; this.sind.on = false; this.sind.t = took ? 22 : 26; if (!took) { this.add(400 * this.mult, 'ko'); this.popup(400 * this.mult, e.b.x, e.b.y - 60); } },
+  sindGone(e, took) { if (!this.sind) return; this.sind.on = false; this.sind.t = took ? 14 : 18; if (!took) { this.add(400 * this.mult, 'ko'); this.popup(400 * this.mult, e.b.x, e.b.y - 60); } },
   bossDown() { if (this.olive) this.olive.free_(); this.stageClear(); },
   stageClear() {
     if (this.cleared) return; this.cleared = true; this.clearT = 2.6; this.say(this.stage.boss ? 'HARBOR’S YOURS!' : 'STRIP CLEARED!', 2.4, 92); this.slow(0.4, 0.8);
@@ -2775,7 +2853,8 @@ Object.assign(G, {
     }
     // waves
     if (!this.cleared && !P.dead) {
-      const alive = this.enemies.filter((e) => e.state !== 'ko').length;
+      // Sindbad doesn't hold up the waves; he only has to be gone before the strip can end
+      const alive = this.enemies.filter((e) => e.state !== 'ko' && e.kind !== 'sindbad').length, sindHere = this.enemies.some((e) => e.kind === 'sindbad' && e.state !== 'ko');
       if (this.between > 0) {
         this.between -= d;
         if (this.between <= 0) {
@@ -2787,7 +2866,7 @@ Object.assign(G, {
       } else {
         if (alive < 6) this.waveClock += d;
         while (this.queue.length && this.queue[0][0] <= this.waveClock) { const q = this.queue.shift(); this.spawn(q[1], q[2], q[3]); }
-        if (!st.boss && !this.queue.length && alive === 0) { if (this.waveIdx + 1 < st.waves.length) this.between = 1.7; else this.stageClear(); }
+        if (!st.boss && !this.queue.length && alive === 0) { if (this.waveIdx + 1 < st.waves.length) this.between = 1.7; else if (!sindHere) this.stageClear(); else this.tip('sindlast', 'ONE MORE: SEND SINDBAD PACKING TO FINISH THE STRIP!', 5); }
       }
     }
     // Sindbad the Sailor turns up, again and again, for Olive
@@ -2797,7 +2876,7 @@ Object.assign(G, {
       if (sd.t <= 0) {
         const key = st.spawns.boat ? 'boat' : 'boatR', e = this.spawn('sindbad', key, 'grab'); sd.on = true; sd.n++;
         this.say(sd.n === 1 ? 'SINDBAD THE SAILOR!' : 'SINDBAD’S BACK!', 1.6, 72); Sfx.toot();
-        this.tip('sindbad', 'SINDBAD ONLY WANTS OLIVE. JABS WON’T STOP HIM AND HE DODGES WIND-UPS: QUICK HAYMAKERS, UPPERCUTS, DIVE-BOMBS AND SPINACH DO.', 9);
+        this.tip('sindbad', 'SINDBAD ONLY WANTS OLIVE. HE DODGES WIND-UPS, SPIN-KICKS AND THROWS DAGGERS: COMBO HAYMAKERS, UPPERCUTS, DIVE-BOMBS AND SPINACH STOP HIM.', 9);
         FX.say(e, pick(e.cfg.cry), 1.6);
       }
     }

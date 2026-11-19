@@ -279,5 +279,12 @@ const World = {
     }
     return hit;
   },
+  surfaceAt(x, y0, y1) {
+    let s = y0;
+    for (let k = 0; k < 4; k++) {
+      if (this.shapes.some((sh) => sh.closed && !sh.ghost && x > sh.minx && x < sh.maxx && s > sh.miny && s < sh.maxy && sh.contains(x, s))) s -= 70; else break;
+    }
+    const h = this.raycast(x, s, x, y1); return h ? h.y : null;
+  },
   groundBelow(x, y, max) { const h = this.raycast(x, y, x, y + (max || 400)); return h ? h.y : null; },
 };

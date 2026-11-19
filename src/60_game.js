@@ -106,6 +106,12 @@ Object.assign(G, {
     }
     Sfx.whoosh(0.8);
   },
+  throwDagger(e) {
+    const P = this.player, sx = e.b.x + e.face * 8, sy = e.b.y - 48, dx = P.b.x + P.b.vx * 0.15 - sx, dy = P.b.y - 10 - sy;
+    const T = clamp(abs(dx) / 880, 0.2, 0.7), g = World.g * 0.55;
+    this.props.push(new Bottle(sx, sy, dx / T, (dy - 0.5 * g * T * T) / T, { dagger: true })); Sfx.whoosh(1.1);
+    this.tip('dagger', 'SINDBAD THROWS DAGGERS. PUNCH ONE TO SEND IT BACK AT HIM.', 6);
+  },
   blockFx(x, y, e) {
     FX.burst(x, y, 22, C.steel); Sfx.wood(0.8); Sfx.punch(0.4); this.hitstop(0.05); this.shake(4);
     FX.stamp(e.kind === 'plank' ? 'TUNK!' : 'BLOCKED!', x, y - 34, 30, C.steel);
@@ -150,7 +156,7 @@ Object.assign(G, {
     if (this.stage.id === 2) this.tip('boss', 'BANK TOUGHS AND BARRELS UP INTO THE CAB — OR EAT YOUR SPINACH AND UPPERCUT THE WRECKING BALL HOME', 9);
   },
   playerDown() { this.slow(0.25, 1.4); this.overT = 1.9; this.say('KNOCKED FLAT!', 1.8, 90); Sfx.spinach(false); Sfx.stop(); Sfx.ko(); },
-  sindGone(e, took) { if (!this.sind) return; this.sind.on = false; this.sind.t = took ? 22 : 26; if (!took) { this.add(400 * this.mult, 'ko'); this.popup(400 * this.mult, e.b.x, e.b.y - 60); } },
+  sindGone(e, took) { if (!this.sind) return; this.sind.on = false; this.sind.t = took ? 14 : 18; if (!took) { this.add(400 * this.mult, 'ko'); this.popup(400 * this.mult, e.b.x, e.b.y - 60); } },
   bossDown() { if (this.olive) this.olive.free_(); this.stageClear(); },
   stageClear() {
     if (this.cleared) return; this.cleared = true; this.clearT = 2.6; this.say(this.stage.boss ? 'HARBOR’S YOURS!' : 'STRIP CLEARED!', 2.4, 92); this.slow(0.4, 0.8);
@@ -245,7 +251,8 @@ Object.assign(G, {
     }
     // waves
     if (!this.cleared && !P.dead) {
-      const alive = this.enemies.filter((e) => e.state !== 'ko').length;
+      // Sindbad doesn't hold up the waves; he only has to be gone before the strip can end
+      const alive = this.enemies.filter((e) => e.state !== 'ko' && e.kind !== 'sindbad').length, sindHere = this.enemies.some((e) => e.kind === 'sindbad' && e.state !== 'ko');
       if (this.between > 0) {
         this.between -= d;
         if (this.between <= 0) {
@@ -257,7 +264,7 @@ Object.assign(G, {
       } else {
         if (alive < 6) this.waveClock += d;
         while (this.queue.length && this.queue[0][0] <= this.waveClock) { const q = this.queue.shift(); this.spawn(q[1], q[2], q[3]); }
-        if (!st.boss && !this.queue.length && alive === 0) { if (this.waveIdx + 1 < st.waves.length) this.between = 1.7; else this.stageClear(); }
+        if (!st.boss && !this.queue.length && alive === 0) { if (this.waveIdx + 1 < st.waves.length) this.between = 1.7; else if (!sindHere) this.stageClear(); else this.tip('sindlast', 'ONE MORE: SEND SINDBAD PACKING TO FINISH THE STRIP!', 5); }
       }
     }
     // Sindbad the Sailor turns up, again and again, for Olive
@@ -267,7 +274,7 @@ Object.assign(G, {
       if (sd.t <= 0) {
         const key = st.spawns.boat ? 'boat' : 'boatR', e = this.spawn('sindbad', key, 'grab'); sd.on = true; sd.n++;
         this.say(sd.n === 1 ? 'SINDBAD THE SAILOR!' : 'SINDBAD’S BACK!', 1.6, 72); Sfx.toot();
-        this.tip('sindbad', 'SINDBAD ONLY WANTS OLIVE. JABS WON’T STOP HIM AND HE DODGES WIND-UPS: QUICK HAYMAKERS, UPPERCUTS, DIVE-BOMBS AND SPINACH DO.', 9);
+        this.tip('sindbad', 'SINDBAD ONLY WANTS OLIVE. HE DODGES WIND-UPS, SPIN-KICKS AND THROWS DAGGERS: COMBO HAYMAKERS, UPPERCUTS, DIVE-BOMBS AND SPINACH STOP HIM.', 9);
         FX.say(e, pick(e.cfg.cry), 1.6);
       }
     }
