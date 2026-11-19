@@ -1049,7 +1049,7 @@ const STYLE = {
   // ship's prow, corncob pipe, skinny upper arms over huge forearms, little sailor cap.
   popeye: {
     shirt: '#22303f', sleeve: C.skin, sleeveDk: C.skin2, pants: '#3d6f9a', pantsDk: '#2f5878', skin: C.skin, shoe: '#4b2e1a',
-    legW: 5, armW: 3.4, torsoW: 13.5, torsoL: 23, forearm: 11, fist: 8.4, tattoo: true, headS: 1.3, neck: 11, hip: 22, shoeS: 1.45,
+    legW: 4.6, armW: 3.2, torsoW: 13, torsoL: 22, forearm: 13, fist: 9.4, tattoo: true, headS: 1.42, neck: 10, hip: 21, shoeS: 1.4,
     deco(hx, hy, sx, sy) {
       X.fillStyle = C.mustard; for (let i = 0; i < 2; i++) { X.beginPath(); X.arc(lerp(hx, sx, 0.42 + i * 0.26) + 6, lerp(hy, sy, 0.42 + i * 0.26), 2, 0, TAU); X.fill(); }
       X.fillStyle = C.ink; X.fillRect(hx - 18, hy - 6, 36, 5); X.fillStyle = C.mustard; X.fillRect(hx + 4, hy - 6, 6, 5);
@@ -1060,46 +1060,48 @@ const STYLE = {
       X.restore();
     },
     head(expr, t, p) {
-      ink(ell(-8.6, -1.5, 3, 3.6), C.skin2, 2);                               // ear
-      // one silhouette: round skull, then the cheek swelling into that prow of a chin
-      const head = new Path2D();
-      head.moveTo(-5, 7);
-      head.bezierCurveTo(-11, 2, -11.5, -15, -0.5, -15.5);
-      head.bezierCurveTo(7.5, -16, 10.5, -10.5, 10, -5.5);
-      head.bezierCurveTo(10, -1.5, 12, 1, 14, 3.4);
-      head.bezierCurveTo(20.5, 2.6, 22.6, 11.2, 16.2, 13.4);
-      head.bezierCurveTo(10.5, 15.4, 3, 13.4, -0.5, 10.2);
-      head.bezierCurveTo(-2.5, 8.8, -3.8, 8, -5, 7);
-      head.closePath();
-      ink(head, C.skin, 2.4);
-      X.lineCap = 'round'; X.strokeStyle = C.ink;
-      X.lineWidth = 1.3; X.beginPath(); X.moveTo(10.2, 9.8); X.quadraticCurveTo(13.4, 11.4, 16.8, 9.6); X.stroke();   // chin crease
-      ink(ell(12.8, -2.4, 3.7, 3.1, 0.1), C.skin, 2);                          // bulb nose
+      // union of a round skull and a big puffy lower face: stroke both, then fill both, so no seam shows
+      const skull = new Path2D(); skull.arc(-0.5, -6.5, 9.2, 0, TAU);
+      const jowl = new Path2D(); jowl.ellipse(5.2, 3.6, 11.4, 8.6, -0.12, 0, TAU);
+      const ear = new Path2D(); ear.ellipse(-8.8, -1.6, 3, 3.8, 0, 0, TAU);
+      X.lineJoin = 'round'; X.strokeStyle = C.ink; X.lineWidth = 4.6;
+      X.stroke(ear); X.stroke(skull); X.stroke(jowl);
+      X.fillStyle = C.skin2; X.fill(ear);
+      X.fillStyle = C.skin; X.fill(skull); X.fill(jowl);
+      X.save(); X.globalAlpha = 0.5; X.fillStyle = C.skin2; X.beginPath(); X.ellipse(1.5, 7.5, 6, 3.4, -0.2, 0, TAU); X.fill(); X.restore();   // cheek shade
+      X.lineCap = 'round';
+      // cheek crease running down from the nose
+      X.lineWidth = 1.4; X.beginPath(); X.moveTo(9.4, 0.6); X.quadraticCurveTo(6.4, 3, 6.6, 6.6); X.stroke();
       if (expr === 'ow') {
-        eyeX(3.4, -6, 1.9); eyeX(8.4, -6.6, 1.3);
-        ink(ell(10.6, 7.4, 2.6, 3.2), C.ink, 0);
+        eyeX(3, -6.2, 2.1); eyeX(9.2, -7.4, 1.4);
+        ink(ell(10.2, 7.6, 3, 3.6), C.ink, 0);
       } else {
-        // the squint: one eye screwed shut, crow's feet at the corner
-        X.lineWidth = 2.1; X.beginPath(); X.moveTo(0.4, -5.6); X.quadraticCurveTo(3.4, -3.8, 6.4, -5.4); X.stroke();
-        X.lineWidth = 1.1; X.beginPath(); X.moveTo(0, -6.4); X.lineTo(-2, -7.4); X.moveTo(0, -4.8); X.lineTo(-2, -4); X.stroke();
-        X.lineWidth = 1.7; X.beginPath(); X.moveTo(0.4, -9); X.quadraticCurveTo(3.4, expr === 'grit' ? -7.2 : -9.8, 6.6, -8.4); X.stroke();
-        // the open eye, peeking past the bridge of the nose
-        ink(ell(8.5, -6.3, 1.6, 2.2), C.white, 1.2, false);
-        X.fillStyle = C.ink; X.beginPath(); X.arc(8.9, -6, expr === 'flex' ? 1.15 : 0.95, 0, TAU); X.fill();
-        // mouth: a hard line hitched up to the pipe side
-        X.lineWidth = 1.9; X.beginPath(); X.moveTo(6.5, 5.6); X.quadraticCurveTo(10.5, expr === 'flex' ? 4.2 : 6.6, 14.6, 4.4); X.stroke();
-        if (expr === 'grit') { X.lineWidth = 1.2; X.beginPath(); X.moveTo(8.5, 7.6); X.lineTo(12.6, 7.2); X.stroke(); }
+        // the squint: heavy brow pressed down onto a shut eye
+        X.lineWidth = 2.2; X.beginPath(); X.moveTo(-0.6, -5.8); X.quadraticCurveTo(2.8, -3.6, 6.4, -5.6); X.stroke();
+        X.lineWidth = 1.2; X.beginPath(); X.moveTo(-1, -6.6); X.lineTo(-3.2, -7.8); X.moveTo(-1, -5); X.lineTo(-3.2, -4.2); X.stroke();
+        X.lineWidth = 2; X.beginPath(); X.moveTo(-1, -9.6); X.quadraticCurveTo(2.6, expr === 'grit' ? -7.6 : -10.6, 6.6, -8.6); X.stroke();
+        // the open eye
+        ink(ell(9.4, -7.2, 1.7, 2.3), C.white, 1.3, false);
+        X.fillStyle = C.ink; X.beginPath(); X.arc(9.8, -6.9, expr === 'flex' ? 1.2 : 1, 0, TAU); X.fill();
+        // the grin: a long line pushed up into the pipe cheek, lower lip under it
+        X.lineWidth = 2; X.beginPath(); X.moveTo(3.4, 6.4); X.quadraticCurveTo(10, expr === 'flex' ? 6 : 9, 15.8, 4.6); X.stroke();
+        X.lineWidth = 1.3; X.beginPath(); X.moveTo(7.4, 10.4); X.quadraticCurveTo(10.6, 11.6, 13.6, 9.8); X.stroke();
+        if (expr === 'grit') { X.lineWidth = 1.2; X.beginPath(); X.moveTo(6.6, 7.6); X.lineTo(12.6, 7.6); X.stroke(); }
       }
-      const pa = expr === 'flex' ? -0.7 : expr === 'ow' ? 0.55 : -0.32;        // corncob pipe
-      X.save(); X.translate(14.6, 4.6); X.rotate(pa);
-      line([[0, 0], [8, 0]], 3.8); line([[0, 0], [8, 0]], 1.4, C.woodDk);
-      ink(rrect(6.6, -7.4, 6, 8.4, 1.6), C.mustard, 1.9); line([[7.6, -4.6], [11.6, -4.6]], 0.9); line([[7.6, -2], [11.6, -2]], 0.9);
+      // ball of a nose, sitting proud of the face
+      X.lineWidth = 2.2; const nose = new Path2D(); nose.arc(13.6, -3.4, 3.7, 0, TAU);
+      X.stroke(nose); X.fillStyle = C.skin; X.fill(nose);
+      X.fillStyle = C.white; X.beginPath(); X.arc(12.6, -4.6, 1, 0, TAU); X.fill();
+      const pa = expr === 'flex' ? -0.75 : expr === 'ow' ? 0.55 : -0.42;       // corncob pipe
+      X.save(); X.translate(15.6, 4.6); X.rotate(pa);
+      line([[0, 0], [8.6, 0]], 3.8); line([[0, 0], [8.6, 0]], 1.4, C.woodDk);
+      ink(rrect(7, -8, 6.4, 9, 1.8), C.mustard, 1.9); line([[8, -5], [12.4, -5]], 0.9); line([[8, -2.2], [12.4, -2.2]], 0.9);
       X.restore();
-      if (p && p.puff) { const k = p.puff; X.save(); X.translate(14.6 + cos(pa) * 9.6, 4.6 + sin(pa) * 9.6 - 10); ink(circ(2, -k * 16, 3 + k * 4), C.white, 1.6); ink(circ(7, -k * 26 - 4, 2 + k * 5), C.white, 1.6); X.restore(); }
-      // sailor cap riding high on the back of the skull, clear of the eyes
-      X.save(); X.translate(-2.6, -14.2); X.rotate(-0.3);
-      const crown = new Path2D(); crown.moveTo(-7.4, 0.6); crown.bezierCurveTo(-7.6, -6.4, 7.6, -6.4, 7.4, 0.6); crown.closePath();
-      ink(crown, C.white, 1.9); ink(rrect(-8, 0, 16, 3, 1.2), C.navy, 1.7);
+      if (p && p.puff) { const k = p.puff; X.save(); X.translate(15.6 + cos(pa) * 10, 4.6 + sin(pa) * 10 - 11); ink(circ(2, -k * 16, 3 + k * 4), C.white, 1.6); ink(circ(7, -k * 26 - 4, 2 + k * 5), C.white, 1.6); X.restore(); }
+      // sailor cap: white crown, dark band, perched on top and tipped back
+      X.save(); X.translate(-1.2, -14.8); X.rotate(-0.24);
+      const crown = new Path2D(); crown.moveTo(-8.6, 1); crown.bezierCurveTo(-9.4, -7.6, 8.8, -8.4, 8.6, 1); crown.closePath();
+      ink(crown, C.white, 2); ink(rrect(-9.2, 0, 18.4, 3.4, 1.4), C.navy, 1.8);
       X.restore();
     },
   },
